@@ -1,0 +1,705 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  Alert,
+  TextInput,
+  FlatList,
+  Modal,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import {
+  Crown,
+  MapPin,
+  Globe,
+  Moon,
+  Sun,
+  Monitor,
+  Calculator,
+  Bell,
+  BellRing,
+  ChevronRight,
+  Shield,
+  Clock,
+  RefreshCw,
+  Check,
+  BookOpen,
+  Languages,
+  Type,
+  Volume2,
+  SkipForward,
+  Timer,
+} from 'lucide-react-native';
+import { useApp } from '@/providers/AppProvider';
+import Colors from '@/constants/colors';
+import { fontFamily, fontWeight as fw } from '@/constants/typography';
+import cities from '@/constants/cities';
+import { CALCULATION_METHODS, PrayerName, PRAYER_DISPLAY_NAMES } from '@/utils/prayer-times';
+import { RECITERS, getReciterById } from '@/constants/reciters';
+
+type ModalType = 'city' | 'method' | 'timezone' | 'reciter' | null;
+
+const TIMEZONES = [
+  'Asia/Riyadh', 'Asia/Dubai', 'Asia/Karachi', 'Asia/Kolkata', 'Asia/Dhaka',
+  'Asia/Jakarta', 'Asia/Kuala_Lumpur', 'Asia/Singapore', 'Asia/Tokyo',
+  'Asia/Baghdad', 'Asia/Tehran', 'Asia/Amman', 'Asia/Beirut', 'Asia/Damascus',
+  'Africa/Cairo', 'Africa/Casablanca', 'Africa/Algiers', 'Africa/Khartoum',
+  'Europe/Istanbul', 'Europe/London', 'Europe/Paris', 'Europe/Berlin',
+  'America/New_York', 'America/Chicago', 'America/Los_Angeles', 'America/Toronto',
+  'Australia/Sydney', 'Pacific/Auckland',
+];
+
+export default function MoreScreen() {
+  const { theme, isDark, settings, updateSettings } = useApp();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [citySearch, setCitySearch] = useState('');
+
+  const filteredCities = cities.filter((c) => {
+    if (!citySearch.trim()) return true;
+    const q = citySearch.toLowerCase();
+    return c.name.toLowerCase().includes(q) || c.country.toLowerCase().includes(q);
+  });
+
+  const currentCity = cities[settings.selectedCityIndex] || cities[0];
+  const currentMethod = CALCULATION_METHODS[settings.calculationMethod];
+
+  const handleRestore = () => {
+    Alert.alert('Restore Purchase', 'No previous purchase found. This is a simulated environment.', [{ text: 'OK' }]);
+  };
+
+  const prayerNames: PrayerName[] = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+  return (
+    <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[styles.title, { color: theme.text }]}>Settings</Text>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>PURCHASE</Text>
+          {settings.isPremium ? (
+            <View style={styles.row}>
+              <Crown size={20} color={Colors.gold} />
+              <Text style={[styles.rowText, { color: theme.text }]}>Lifetime Access</Text>
+              <Check size={18} color={Colors.primary} />
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.row} onPress={() => router.push('/paywall' as any)}>
+              <Crown size={20} color={Colors.gold} />
+              <Text style={[styles.rowText, { color: theme.text }]}>Unlock Lifetime</Text>
+              <ChevronRight size={18} color={theme.textTertiary} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.row} onPress={handleRestore}>
+            <RefreshCw size={20} color={Colors.primary} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Restore Purchase</Text>
+            <ChevronRight size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>LOCATION</Text>
+          <TouchableOpacity style={styles.row} onPress={() => setActiveModal('city')}>
+            <MapPin size={20} color={Colors.primary} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowText, { color: theme.text }]}>City</Text>
+              <Text style={[styles.rowValue, { color: theme.textSecondary }]}>{currentCity.name}</Text>
+            </View>
+            <ChevronRight size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>TIME ZONE</Text>
+          <View style={styles.row}>
+            <Clock size={20} color={Colors.primary} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Use Device Time Zone</Text>
+            <Switch
+              value={settings.useDeviceTimezone}
+              onValueChange={(v) => updateSettings({ useDeviceTimezone: v })}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+          {!settings.useDeviceTimezone && (
+            <TouchableOpacity style={styles.row} onPress={() => setActiveModal('timezone')}>
+              <Globe size={20} color={Colors.gold} />
+              <View style={styles.rowContent}>
+                <Text style={[styles.rowText, { color: theme.text }]}>Time Zone</Text>
+                <Text style={[styles.rowValue, { color: theme.textSecondary }]}>{settings.manualTimezone}</Text>
+              </View>
+              <ChevronRight size={18} color={theme.textTertiary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>CALCULATION</Text>
+          <TouchableOpacity style={styles.row} onPress={() => setActiveModal('method')}>
+            <Calculator size={20} color={Colors.primary} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowText, { color: theme.text }]}>Method</Text>
+              <Text style={[styles.rowValue, { color: theme.textSecondary }]} numberOfLines={1}>
+                {currentMethod?.name || settings.calculationMethod}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+          <View style={styles.row}>
+            <Text style={[styles.rowText, { color: theme.text, marginLeft: 34 }]}>Madhab (Asr)</Text>
+            <View style={styles.segmented}>
+              {(['shafi', 'hanafi'] as const).map((m) => (
+                <TouchableOpacity
+                  key={m}
+                  style={[styles.segBtn, settings.madhab === m && styles.segBtnActive]}
+                  onPress={() => updateSettings({ madhab: m })}
+                >
+                  <Text style={[styles.segText, settings.madhab === m && styles.segTextActive]}>
+                    {m === 'shafi' ? "Shafi'i" : 'Hanafi'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.rowText, { color: theme.text, marginLeft: 34 }]}>High Latitude</Text>
+            <View style={styles.segmented}>
+              {(['middle', 'seventh', 'angle'] as const).map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  style={[styles.segBtn, settings.highLatRule === r && styles.segBtnActive]}
+                  onPress={() => updateSettings({ highLatRule: r })}
+                >
+                  <Text style={[styles.segText, settings.highLatRule === r && styles.segTextActive]}>
+                    {r === 'middle' ? 'Mid' : r === 'seventh' ? '1/7' : 'Angle'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>ADJUSTMENTS (MINUTES)</Text>
+          {prayerNames.map((name) => (
+            <View key={name} style={styles.adjustRow}>
+              <Text style={[styles.adjustLabel, { color: theme.text }]}>{PRAYER_DISPLAY_NAMES[name]}</Text>
+              <View style={styles.adjustControls}>
+                <TouchableOpacity
+                  style={[styles.adjustBtn, { backgroundColor: theme.surfaceSecondary }]}
+                  onPress={() => {
+                    const adj = { ...settings.adjustments };
+                    adj[name] = (adj[name] || 0) - 1;
+                    updateSettings({ adjustments: adj });
+                  }}
+                >
+                  <Text style={[styles.adjustBtnText, { color: theme.text }]}>−</Text>
+                </TouchableOpacity>
+                <Text style={[styles.adjustValue, { color: theme.text }]}>
+                  {settings.adjustments[name] || 0}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.adjustBtn, { backgroundColor: theme.surfaceSecondary }]}
+                  onPress={() => {
+                    const adj = { ...settings.adjustments };
+                    adj[name] = (adj[name] || 0) + 1;
+                    updateSettings({ adjustments: adj });
+                  }}
+                >
+                  <Text style={[styles.adjustBtnText, { color: theme.text }]}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>PRAYER NOTIFICATIONS</Text>
+          {prayerNames.filter(n => n !== 'sunrise').map((name) => {
+            const enabledArr = settings.enabledNotificationPrayers || [];
+            const isEnabled = enabledArr.includes(name);
+            const freeLimit = !settings.isPremium && !isEnabled && enabledArr.length >= 1;
+            return (
+              <View key={name} style={styles.row}>
+                <Bell size={18} color={isEnabled ? Colors.primary : theme.textTertiary} />
+                <Text style={[styles.rowText, { color: theme.text }]}>{PRAYER_DISPLAY_NAMES[name]}</Text>
+                <Switch
+                  value={isEnabled}
+                  onValueChange={(v) => {
+                    if (freeLimit && v) {
+                      router.push('/paywall' as any);
+                      return;
+                    }
+                    const current = settings.enabledNotificationPrayers || [];
+                    const updated = v
+                      ? [...current, name]
+                      : current.filter((p: PrayerName) => p !== name);
+                    updateSettings({
+                      enabledNotificationPrayers: updated,
+                      enabledNotificationPrayer: updated.length > 0 ? updated[0] : null,
+                    });
+                  }}
+                  trackColor={{ true: Colors.primary }}
+                  disabled={freeLimit}
+                />
+              </View>
+            );
+          })}
+          {!settings.isPremium && (
+            <Text style={[styles.noteText, { color: theme.textTertiary }]}>
+              Free version: 1 prayer notification. Unlock lifetime for all.
+            </Text>
+          )}
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>NOTIFICATION OPTIONS</Text>
+          <View style={styles.row}>
+            <Timer size={20} color={Colors.primary} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowText, { color: theme.text }]}>Reminder Before Prayer</Text>
+              <Text style={[styles.rowValue, { color: theme.textSecondary }]}>
+                {settings.reminderMinutesBefore} min before
+              </Text>
+            </View>
+            <Switch
+              value={settings.reminderBeforePrayer}
+              onValueChange={(v) => updateSettings({ reminderBeforePrayer: v })}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+          {settings.reminderBeforePrayer && (
+            <View style={styles.adjustRow}>
+              <Text style={[styles.adjustLabel, { color: theme.text }]}>Minutes Before</Text>
+              <View style={styles.adjustControls}>
+                <TouchableOpacity
+                  style={[styles.adjustBtn, { backgroundColor: theme.surfaceSecondary }]}
+                  onPress={() => {
+                    const next = Math.max(5, settings.reminderMinutesBefore - 5);
+                    updateSettings({ reminderMinutesBefore: next });
+                  }}
+                >
+                  <Text style={[styles.adjustBtnText, { color: theme.text }]}>−</Text>
+                </TouchableOpacity>
+                <Text style={[styles.adjustValue, { color: theme.text }]}>
+                  {settings.reminderMinutesBefore}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.adjustBtn, { backgroundColor: theme.surfaceSecondary }]}
+                  onPress={() => {
+                    const next = Math.min(60, settings.reminderMinutesBefore + 5);
+                    updateSettings({ reminderMinutesBefore: next });
+                  }}
+                >
+                  <Text style={[styles.adjustBtnText, { color: theme.text }]}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          <View style={styles.row}>
+            <BellRing size={20} color={Colors.gold} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowText, { color: theme.text }]}>Azan at Prayer Time</Text>
+              <Text style={[styles.rowValue, { color: theme.textSecondary }]}>
+                Notification when prayer time arrives
+              </Text>
+            </View>
+            <Switch
+              value={settings.azanAtPrayerTime}
+              onValueChange={(v) => updateSettings({ azanAtPrayerTime: v })}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+          <Text style={[styles.noteText, { color: theme.textTertiary }]}>
+            Notifications are scheduled for selected prayers above. Enable at least one prayer.
+          </Text>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>APPEARANCE</Text>
+          <View style={styles.row}>
+            <Text style={[styles.rowText, { color: theme.text, marginLeft: 0 }]}>Theme</Text>
+            <View style={styles.segmented}>
+              {([
+                { key: 'system', icon: <Monitor size={14} color={settings.themeMode === 'system' ? '#fff' : theme.textSecondary} /> },
+                { key: 'light', icon: <Sun size={14} color={settings.themeMode === 'light' ? '#fff' : theme.textSecondary} /> },
+                { key: 'dark', icon: <Moon size={14} color={settings.themeMode === 'dark' ? '#fff' : theme.textSecondary} /> },
+              ] as const).map(({ key, icon }) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.segBtn, settings.themeMode === key && styles.segBtnActive]}
+                  onPress={() => updateSettings({ themeMode: key as any })}
+                >
+                  {icon}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.rowText, { color: theme.text }]}>24-Hour Format</Text>
+            <Switch
+              value={settings.use24hFormat}
+              onValueChange={(v) => updateSettings({ use24hFormat: v })}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>QURAN AUDIO</Text>
+          <TouchableOpacity style={styles.row} onPress={() => setActiveModal('reciter')}>
+            <Volume2 size={20} color={Colors.primary} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowText, { color: theme.text }]}>Reciter</Text>
+              <Text style={[styles.rowValue, { color: theme.textSecondary }]} numberOfLines={1}>
+                {getReciterById(settings.selectedReciterId).name}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={theme.textTertiary} />
+          </TouchableOpacity>
+          <View style={styles.row}>
+            <SkipForward size={20} color={Colors.primary} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Auto-play Next Ayah</Text>
+            <Switch
+              value={settings.autoPlayNextAyah}
+              onValueChange={(v) => updateSettings({ autoPlayNextAyah: v })}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+          <Text style={[styles.noteText, { color: theme.textTertiary }]}>
+            Audio streams from EveryAyah.com. Cached locally after first play.
+          </Text>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>QURAN READER</Text>
+          <View style={styles.row}>
+            <Languages size={20} color={Colors.primary} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Transliteration</Text>
+            <Switch
+              value={settings.showTransliteration}
+              onValueChange={(v) => updateSettings({ showTransliteration: v })}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+          <View style={styles.row}>
+            <Type size={20} color={Colors.primary} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Arabic Text</Text>
+            <Switch
+              value={settings.showArabic}
+              onValueChange={(v) => {
+                if (!settings.showTransliteration && !settings.showTranslation && v === false) return;
+                updateSettings({ showArabic: v });
+              }}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+          <View style={styles.row}>
+            <BookOpen size={20} color={Colors.primary} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Translation</Text>
+            <Switch
+              value={settings.showTranslation}
+              onValueChange={(v) => {
+                if (!settings.showArabic && !settings.showTransliteration && v === false) return;
+                updateSettings({ showTranslation: v });
+              }}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+          <View style={styles.adjustRow}>
+            <Text style={[styles.adjustLabel, { color: theme.text }]}>Arabic Size</Text>
+            <View style={styles.adjustControls}>
+              <TouchableOpacity
+                style={[styles.adjustBtn, { backgroundColor: theme.surfaceSecondary }]}
+                onPress={() => {
+                  const next = Math.max(16, settings.arabicFontSize - 2);
+                  updateSettings({ arabicFontSize: next });
+                }}
+              >
+                <Text style={[styles.adjustBtnText, { color: theme.text }]}>−</Text>
+              </TouchableOpacity>
+              <Text style={[styles.adjustValue, { color: theme.text }]}>
+                {settings.arabicFontSize}
+              </Text>
+              <TouchableOpacity
+                style={[styles.adjustBtn, { backgroundColor: theme.surfaceSecondary }]}
+                onPress={() => {
+                  const next = Math.min(40, settings.arabicFontSize + 2);
+                  updateSettings({ arabicFontSize: next });
+                }}
+              >
+                <Text style={[styles.adjustBtnText, { color: theme.text }]}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.adjustRow}>
+            <Text style={[styles.adjustLabel, { color: theme.text }]}>Transliteration Size</Text>
+            <View style={styles.adjustControls}>
+              <TouchableOpacity
+                style={[styles.adjustBtn, { backgroundColor: theme.surfaceSecondary }]}
+                onPress={() => {
+                  const next = Math.max(11, settings.transliterationFontSize - 1);
+                  updateSettings({ transliterationFontSize: next });
+                }}
+              >
+                <Text style={[styles.adjustBtnText, { color: theme.text }]}>−</Text>
+              </TouchableOpacity>
+              <Text style={[styles.adjustValue, { color: theme.text }]}>
+                {settings.transliterationFontSize}
+              </Text>
+              <TouchableOpacity
+                style={[styles.adjustBtn, { backgroundColor: theme.surfaceSecondary }]}
+                onPress={() => {
+                  const next = Math.min(24, settings.transliterationFontSize + 1);
+                  updateSettings({ transliterationFontSize: next });
+                }}
+              >
+                <Text style={[styles.adjustBtnText, { color: theme.text }]}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text style={[styles.noteText, { color: theme.textTertiary }]}>
+            Toggle display layers and adjust font sizes for the Quran reader.
+          </Text>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>ABOUT</Text>
+          <View style={styles.row}>
+            <Shield size={20} color={Colors.primary} />
+            <Text style={[styles.rowText, { color: theme.text }]}>Privacy Policy</Text>
+            <ChevronRight size={18} color={theme.textTertiary} />
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.rowText, { color: theme.textSecondary, marginLeft: 34, fontSize: 13 }]}>
+              Prayer Companion v1.0.0
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      <Modal visible={activeModal === 'city'} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalRoot, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Select City</Text>
+            <TouchableOpacity onPress={() => { setActiveModal(null); setCitySearch(''); }}>
+              <Text style={[styles.modalDone, { color: Colors.primary }]}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.modalSearch, { backgroundColor: theme.surfaceSecondary }]}>
+            <TextInput
+              style={[styles.modalSearchInput, { color: theme.text }]}
+              placeholder="Search cities..."
+              placeholderTextColor={theme.textTertiary}
+              value={citySearch}
+              onChangeText={setCitySearch}
+            />
+          </View>
+          <FlatList
+            data={filteredCities}
+            keyExtractor={(_, i) => String(i)}
+            renderItem={({ item, index }) => {
+              const realIdx = cities.indexOf(item);
+              const selected = realIdx === settings.selectedCityIndex;
+              return (
+                <TouchableOpacity
+                  style={[styles.modalRow, selected && { backgroundColor: isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.04)' }]}
+                  onPress={() => { updateSettings({ selectedCityIndex: realIdx }); setActiveModal(null); setCitySearch(''); }}
+                >
+                  <Text style={[styles.modalRowText, { color: theme.text }]}>{item.name}</Text>
+                  <Text style={[styles.modalRowSub, { color: theme.textSecondary }]}>{item.country}</Text>
+                  {selected && <Check size={18} color={Colors.primary} />}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+      </Modal>
+
+      <Modal visible={activeModal === 'method'} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalRoot, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Calculation Method</Text>
+            <TouchableOpacity onPress={() => setActiveModal(null)}>
+              <Text style={[styles.modalDone, { color: Colors.primary }]}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView>
+            {Object.entries(CALCULATION_METHODS).map(([key, method]) => {
+              const selected = key === settings.calculationMethod;
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.modalRow, selected && { backgroundColor: isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.04)' }]}
+                  onPress={() => { updateSettings({ calculationMethod: key }); setActiveModal(null); }}
+                >
+                  <View style={styles.modalRowContent}>
+                    <Text style={[styles.modalRowText, { color: theme.text }]}>{method.name}</Text>
+                    <Text style={[styles.modalRowSub, { color: theme.textSecondary }]}>
+                      Fajr: {method.params.fajr}° · Isha: {method.params.ishaMinutes ? `${method.params.ishaMinutes}min` : `${method.params.isha}°`}
+                    </Text>
+                  </View>
+                  {selected && <Check size={18} color={Colors.primary} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={activeModal === 'reciter'} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalRoot, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Reciter</Text>
+            <TouchableOpacity onPress={() => setActiveModal(null)}>
+              <Text style={[styles.modalDone, { color: Colors.primary }]}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView>
+            {RECITERS.map((reciter) => {
+              const selected = reciter.id === settings.selectedReciterId;
+              return (
+                <TouchableOpacity
+                  key={reciter.id}
+                  style={[styles.modalRow, selected && { backgroundColor: isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.04)' }]}
+                  onPress={() => { updateSettings({ selectedReciterId: reciter.id }); setActiveModal(null); }}
+                >
+                  <View style={styles.modalRowContent}>
+                    <Text style={[styles.modalRowText, { color: theme.text }]}>{reciter.name}</Text>
+                    <Text style={[styles.modalRowSub, { color: theme.textSecondary }]}>{reciter.nameArabic}</Text>
+                  </View>
+                  {selected && <Check size={18} color={Colors.primary} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={activeModal === 'timezone'} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalRoot, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Time Zone</Text>
+            <TouchableOpacity onPress={() => setActiveModal(null)}>
+              <Text style={[styles.modalDone, { color: Colors.primary }]}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView>
+            {TIMEZONES.map((tz) => {
+              const selected = tz === settings.manualTimezone;
+              return (
+                <TouchableOpacity
+                  key={tz}
+                  style={[styles.modalRow, selected && { backgroundColor: isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.04)' }]}
+                  onPress={() => { updateSettings({ manualTimezone: tz }); setActiveModal(null); }}
+                >
+                  <Text style={[styles.modalRowText, { color: theme.text }]}>{tz}</Text>
+                  {selected && <Check size={18} color={Colors.primary} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+  title: { fontFamily: fontFamily.system, fontSize: 34, fontWeight: fw.bold, letterSpacing: 0.37, lineHeight: 41, marginBottom: 20, paddingTop: 8 },
+  section: {
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  sectionLabel: {
+    fontFamily: fontFamily.system,
+    fontSize: 12,
+    fontWeight: fw.regular,
+    letterSpacing: -0.08,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  row: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    gap: 12,
+  },
+  rowContent: { flex: 1 },
+  rowText: { fontFamily: fontFamily.system, flex: 1, fontSize: 16, fontWeight: fw.regular, letterSpacing: -0.32 },
+  rowValue: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, letterSpacing: -0.08, marginTop: 2 },
+  noteText: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, paddingHorizontal: 14, paddingBottom: 12, lineHeight: 16 },
+  segmented: { flexDirection: 'row' as const, gap: 4 },
+  segBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,212,230,0.06)',
+  },
+  segBtnActive: {
+    backgroundColor: Colors.primary,
+  },
+  segText: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.medium, letterSpacing: -0.08, color: '#666' },
+  segTextActive: { color: '#fff' },
+  adjustRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  adjustLabel: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.regular, letterSpacing: -0.24 },
+  adjustControls: { flexDirection: 'row' as const, alignItems: 'center', gap: 12 },
+  adjustBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adjustBtnText: { fontFamily: fontFamily.system, fontSize: 18, fontWeight: fw.medium },
+  adjustValue: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.semibold, letterSpacing: -0.24, minWidth: 24, textAlign: 'center' as const },
+  modalRoot: { flex: 1 },
+  modalHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modalTitle: { fontFamily: fontFamily.system, fontSize: 17, fontWeight: fw.semibold, letterSpacing: -0.41 },
+  modalDone: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold, letterSpacing: -0.32 },
+  modalSearch: { margin: 16, borderRadius: 10, paddingHorizontal: 14 },
+  modalSearchInput: { fontFamily: fontFamily.system, height: 42, fontSize: 16, fontWeight: fw.regular, letterSpacing: -0.32 },
+  modalRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.04)',
+  },
+  modalRowContent: { flex: 1 },
+  modalRowText: { fontFamily: fontFamily.system, flex: 1, fontSize: 16, fontWeight: fw.regular, letterSpacing: -0.32 },
+  modalRowSub: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 2 },
+});
