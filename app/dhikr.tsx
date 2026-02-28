@@ -12,7 +12,6 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
 import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen, Volume2, Square } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -82,7 +81,6 @@ export default function DhikrScreen() {
 
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [arabicVoice, setArabicVoice] = useState<string | undefined>(undefined);
-  const audioRef = useRef<Audio.Sound | null>(null);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const stepTransition = useRef(new Animated.Value(1)).current;
@@ -228,22 +226,7 @@ export default function DhikrScreen() {
 
     return () => {
       Speech.stop();
-      if (audioRef.current) {
-        audioRef.current.unloadAsync();
-      }
     };
-  }, []);
-
-  const stopAudio = useCallback(async () => {
-    if (audioRef.current) {
-      try {
-        await audioRef.current.stopAsync();
-        await audioRef.current.unloadAsync();
-      } catch (e) {
-        console.log('Error stopping audio:', e);
-      }
-      audioRef.current = null;
-    }
   }, []);
 
   const handlePlayVoice = useCallback(async (index: number) => {
@@ -252,11 +235,7 @@ export default function DhikrScreen() {
 
     try {
       if (playingIndex === index) {
-        if (index === 0 || index === 1 || index === 4) {
-          await stopAudio();
-        } else {
-          await Speech.stop();
-        }
+        await Speech.stop();
         setPlayingIndex(null);
         return;
       }
@@ -266,7 +245,6 @@ export default function DhikrScreen() {
         await Speech.stop();
         await new Promise(resolve => setTimeout(resolve, 300));
       }
-      await stopAudio();
 
       if (Platform.OS !== 'web') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -274,32 +252,9 @@ export default function DhikrScreen() {
 
       setPlayingIndex(index);
 
-      if (index === 0 || index === 1 || index === 4) {
-        const audioFiles: Record<number, any> = {
-          0: require('@/assets/audio/subhanallah.mp3'),
-          1: require('@/assets/audio/alhamdulillah.mp3'),
-          4: require('@/assets/audio/la-ilaha-illallah.mp3'),
-        };
-        const labels: Record<number, string> = { 0: 'SubhanAllah', 1: 'Alhamdulillah', 4: 'La ilaha illallah' };
-        console.log(`Playing MP3 for ${labels[index]}`);
-        const { sound } = await Audio.Sound.createAsync(
-          audioFiles[index],
-          { shouldPlay: true }
-        );
-        audioRef.current = sound;
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            console.log(`MP3 playback finished for ${labels[index]}`);
-            setPlayingIndex(null);
-            sound.unloadAsync();
-            audioRef.current = null;
-          }
-        });
-        return;
-      }
-
       const transliterations: Record<number, string> = {
         0: 'Subhan Allah',
+        1: 'Alhamdulillah',
         2: 'Allahu Akbar',
         3: 'La ilaha illallah',
         4: 'La ilaha illallahu wahdahu la sharika lahu lahul mulku wa lahul hamdu wa huwa ala kulli shayin qadeer',
@@ -307,6 +262,7 @@ export default function DhikrScreen() {
 
       const arabicTexts: Record<number, string> = {
         0: 'سبحان الله',
+        1: 'الحمد لله',
         2: 'الله أكبر',
         3: 'لا إله إلا الله',
         4: 'لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير',
@@ -345,7 +301,7 @@ export default function DhikrScreen() {
       console.log('handlePlayVoice error:', err);
       setPlayingIndex(null);
     }
-  }, [playingIndex, arabicVoice, stopAudio]);
+  }, [playingIndex, arabicVoice]);
 
   const ringColor = useMemo(() => {
     if (mode === 'tasbih') {
