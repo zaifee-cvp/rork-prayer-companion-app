@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { X, RotateCcw, Target, Flame, ChevronRight, Check } from 'lucide-react-native';
+import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
@@ -43,7 +43,19 @@ const TASBIH_SEQUENCE: DhikrStep[] = [
     meaning: 'Allah is the Greatest',
     target: 34,
   },
+  {
+    arabic: 'لَا إِلٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
+    transliteration: 'La ilaha illallahu, wahdahu la sharika lahu, lahul-mulku wa lahul-hamdu, wa Huwa \'ala kulli shai\'in Qadir',
+    meaning: 'There is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things.',
+    target: 1,
+  },
 ];
+
+const COMPLETION_HADITH = {
+  narrator: 'Narrated Abu Hurairah (RA)',
+  text: 'Allah\'s Messenger (peace be upon him) said, "Whoever says, \'Subhan Allah wa bihamdihi,\' one hundred times a day, will be forgiven all his sins even if they were as much as the foam of the sea."',
+  source: 'Sahih al-Bukhari, Book 80, Hadith 100',
+};
 
 const FREE_PRESETS = [33, 99, 100];
 
@@ -257,7 +269,7 @@ export default function DhikrScreen() {
               <>
                 <Text style={[styles.stepArabic, { color: Colors.gold }]}>ما شاء الله</Text>
                 <Text style={[styles.stepTranslit, { color: Colors.gold }]}>Sequence Complete!</Text>
-                <Text style={[styles.stepMeaning, { color: theme.textSecondary }]}>Tap reset to start again</Text>
+                <Text style={[styles.stepMeaning, { color: theme.textSecondary }]}>100 Dhikr completed</Text>
               </>
             )}
           </Animated.View>
@@ -366,6 +378,31 @@ export default function DhikrScreen() {
             <Target size={18} color={Colors.primary} />
             <Text style={[styles.targetLabel, { color: theme.text }]}>
               {isStepComplete ? 'Completed!' : `${target - count} remaining`}
+            </Text>
+          </View>
+        )}
+
+        {mode === 'tasbih' && sequenceComplete && (
+          <View style={[styles.hadithCard, { backgroundColor: theme.surface }]}>
+            <View style={styles.hadithHeader}>
+              <BookOpen size={18} color={Colors.gold} />
+              <Text style={[styles.hadithHeaderText, { color: Colors.gold }]}>Hadith</Text>
+            </View>
+            <Text style={[styles.hadithQuote, { color: theme.text }]}>
+              The Prophet ﷺ said:
+            </Text>
+            <Text style={[styles.hadithBody, { color: theme.text }]}>
+              "His sins will be forgiven even if they are like the foam of the sea."
+            </Text>
+            <View style={[styles.hadithDivider, { backgroundColor: theme.border }]} />
+            <Text style={[styles.hadithNarrator, { color: theme.textSecondary }]}>
+              {COMPLETION_HADITH.narrator}:
+            </Text>
+            <Text style={[styles.hadithFull, { color: theme.textSecondary }]}>
+              {COMPLETION_HADITH.text}
+            </Text>
+            <Text style={[styles.hadithSource, { color: theme.textTertiary }]}>
+              ({COMPLETION_HADITH.source})
             </Text>
           </View>
         )}
@@ -561,4 +598,69 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   targetLabel: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold, letterSpacing: -0.32 },
+  hadithCard: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  hadithHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  hadithHeaderText: {
+    fontFamily: fontFamily.system,
+    fontSize: 14,
+    fontWeight: fw.semibold,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+  },
+  hadithQuote: {
+    fontFamily: fontFamily.system,
+    fontSize: 17,
+    fontWeight: fw.semibold,
+    letterSpacing: -0.41,
+    textAlign: 'center' as const,
+    marginBottom: 8,
+  },
+  hadithBody: {
+    fontFamily: fontFamily.system,
+    fontSize: 18,
+    fontWeight: fw.medium,
+    fontStyle: 'italic' as const,
+    letterSpacing: -0.32,
+    textAlign: 'center' as const,
+    lineHeight: 26,
+    marginBottom: 16,
+  },
+  hadithDivider: {
+    height: StyleSheet.hairlineWidth,
+    width: '100%',
+    marginBottom: 14,
+  },
+  hadithNarrator: {
+    fontFamily: fontFamily.system,
+    fontSize: 13,
+    fontWeight: fw.semibold,
+    letterSpacing: -0.08,
+    marginBottom: 6,
+  },
+  hadithFull: {
+    fontFamily: fontFamily.system,
+    fontSize: 13,
+    fontWeight: fw.regular,
+    fontStyle: 'italic' as const,
+    letterSpacing: -0.08,
+    lineHeight: 19,
+    marginBottom: 8,
+  },
+  hadithSource: {
+    fontFamily: fontFamily.system,
+    fontSize: 12,
+    fontWeight: fw.regular,
+    letterSpacing: -0.08,
+  },
 });
