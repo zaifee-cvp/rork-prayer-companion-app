@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen, Volume2, Square } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -80,6 +80,7 @@ export default function DhikrScreen() {
   const [sequenceComplete, setSequenceComplete] = useState(false);
 
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const stepTransition = useRef(new Animated.Value(1)).current;
@@ -201,7 +202,10 @@ export default function DhikrScreen() {
 
   useEffect(() => {
     return () => {
-      Speech.stop();
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
     };
   }, []);
 
@@ -210,50 +214,60 @@ export default function DhikrScreen() {
     if (!step) return;
 
     if (playingIndex === index) {
-      Speech.stop();
+      if (soundRef.current) {
+        await soundRef.current.stopAsync().catch(() => {});
+        await soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
       setPlayingIndex(null);
       return;
     }
 
-    Speech.stop();
+    if (soundRef.current) {
+      await soundRef.current.stopAsync().catch(() => {});
+      await soundRef.current.unloadAsync().catch(() => {});
+      soundRef.current = null;
+    }
+
     setPlayingIndex(index);
 
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    const arabicPronunciations: Record<number, string> = {
-      0: 'سُبْحَانَ ٱللَّٰهِ',
-      1: 'ٱلْحَمْدُ لِلَّٰهِ',
-      2: 'ٱللَّٰهُ أَكْبَرُ',
-      3: 'لَا إِلَٰهَ إِلَّا ٱللَّٰهُ',
-      4: 'لَا إِلَٰهَ إِلَّا ٱللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ لَهُ ٱلْمُلْكُ وَلَهُ ٱلْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
+    const arabicTexts: Record<number, string> = {
+      0: 'سبحان الله',
+      1: 'الحمد لله',
+      2: 'الله أكبر',
+      3: 'لا إله إلا الله',
+      4: 'لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير',
     };
 
-    const textToSpeak = arabicPronunciations[index] ?? step.arabic;
-    console.log('Speaking dhikr:', step.transliteration, textToSpeak);
+    const textToSpeak = arabicTexts[index] ?? step.arabic;
+    const encodedText = encodeURIComponent(textToSpeak);
+    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=ar&client=tw-ob&ttsspeed=0.5`;
 
-    const trySpeak = (lang: string) => {
-      Speech.speak(textToSpeak, {
-        language: lang,
-        rate: 0.75,
-        pitch: 1.0,
-        onDone: () => {
-          console.log('Speech finished for index:', index);
+    console.log('Playing dhikr audio:', step.transliteration);
+
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: audioUrl },
+        { shouldPlay: true }
+      );
+      soundRef.current = sound;
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          console.log('Audio finished for index:', index);
           setPlayingIndex(null);
-        },
-        onError: (err) => {
-          console.log('Speech error with lang', lang, ':', err);
-          if (lang === 'ar-SA') {
-            trySpeak('ar');
-          } else {
-            setPlayingIndex(null);
-          }
-        },
+          sound.unloadAsync().catch(() => {});
+          soundRef.current = null;
+        }
       });
-    };
-
-    trySpeak('ar-SA');
+    } catch (err) {
+      console.log('Audio playback error:', err);
+      setPlayingIndex(null);
+    }
   }, [playingIndex]);
 
   const ringColor = useMemo(() => {
