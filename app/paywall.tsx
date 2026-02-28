@@ -91,7 +91,7 @@ export default function PaywallScreen() {
   const isWorking = isPurchasing || isRestoring;
 
   return (
-    <View style={[styles.root, { backgroundColor: isDark ? '#1A1A1C' : '#F7F6F3' }]}>
+    <View style={[styles.root, { backgroundColor: isDark ? '#1A1A1C' : '#F8F7F4' }]}>
       <TouchableOpacity
         style={[styles.closeBtn, { top: insets.top + 8 }]}
         onPress={() => router.back()}
@@ -112,18 +112,23 @@ export default function PaywallScreen() {
           <Crown size={28} color={Colors.gold} strokeWidth={1.8} />
         </View>
 
-        <Text style={[styles.title, { color: theme.text }]}>Upgrade to Premium</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Unlock Focused,{"\n"}Uninterrupted Worship</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Support the app and unlock an ad-free experience.
+          Premium tools designed for deeper spiritual focus.
         </Text>
 
         <View style={styles.featuresSection}>
           {PREMIUM_FEATURES.map((feat, idx) => (
-            <View key={idx} style={styles.featureRow}>
-              <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(107,158,145,0.1)' : 'rgba(107,158,145,0.08)' }]}>
-                <feat.icon size={15} color={Colors.primary} strokeWidth={1.8} />
+            <View key={idx}>
+              <View style={styles.featureRow}>
+                <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(107,158,145,0.1)' : 'rgba(107,158,145,0.08)' }]}>
+                  <feat.icon size={16} color={Colors.primary} strokeWidth={1.8} />
+                </View>
+                <Text style={[styles.featureLabel, { color: theme.text }]}>{feat.label}</Text>
               </View>
-              <Text style={[styles.featureLabel, { color: theme.text }]}>{feat.label}</Text>
+              {idx < PREMIUM_FEATURES.length - 1 && (
+                <View style={[styles.featureDivider, { backgroundColor: theme.border }]} />
+              )}
             </View>
           ))}
         </View>
@@ -268,33 +273,34 @@ const styles = StyleSheet.create({
   closeBg: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: 24, alignItems: 'center' },
   crownCircle: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  title: { fontFamily: fontFamily.system, fontSize: 24, fontWeight: fw.bold, textAlign: 'center' as const, letterSpacing: -0.3 },
-  subtitle: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.regular, textAlign: 'center' as const, marginTop: 8, lineHeight: 20, maxWidth: 280 },
-  featuresSection: { width: '100%', marginTop: 28, gap: 12 },
-  featureRow: { flexDirection: 'row' as const, alignItems: 'center', gap: 12 },
-  featureIcon: { width: 30, height: 30, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  featureLabel: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.regular, flex: 1 },
-  planSection: { width: '100%', marginTop: 28, gap: 10, alignItems: 'center' },
+  title: { fontFamily: fontFamily.system, fontSize: 26, fontWeight: fw.bold, textAlign: 'center' as const, letterSpacing: -0.4, lineHeight: 32 },
+  subtitle: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.regular, textAlign: 'center' as const, marginTop: 10, lineHeight: 22, maxWidth: 290, color: undefined },
+  featuresSection: { width: '100%', marginTop: 32, gap: 16 },
+  featureRow: { flexDirection: 'row' as const, alignItems: 'center', gap: 14 },
+  featureIcon: { width: 34, height: 34, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+  featureLabel: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.regular, flex: 1 },
+  planSection: { width: '100%', marginTop: 32, gap: 14, alignItems: 'center' },
   planCard: { width: '100%', borderRadius: 14, overflow: 'hidden' },
   planBadge: { position: 'absolute' as const, top: -1, right: 12, zIndex: 1 },
   badgeBg: { paddingHorizontal: 10, paddingVertical: 4, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 },
   badgeText: { fontFamily: fontFamily.system, color: '#fff', fontSize: 9, fontWeight: fw.bold, letterSpacing: 0.8 },
-  planContent: { flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'space-between', padding: 18 },
+  planContent: { flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'space-between', padding: 20 },
   planLeft: { flexDirection: 'row' as const, alignItems: 'center', gap: 12 },
   radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#9A9A9D', justifyContent: 'center', alignItems: 'center' },
   radioInner: { width: 10, height: 10, borderRadius: 5 },
-  planName: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium },
+  planName: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold },
   planTrial: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 2 },
   planSubtext: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 2 },
   planRight: { alignItems: 'flex-end' as const },
-  planPrice: { fontFamily: fontFamily.system, fontSize: 18, fontWeight: fw.bold, letterSpacing: -0.3 },
+  planPrice: { fontFamily: fontFamily.system, fontSize: 20, fontWeight: fw.bold, letterSpacing: -0.3 },
   planPeriod: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular },
-  purchaseBtn: { width: '100%', borderRadius: 14, paddingVertical: 18, alignItems: 'center', justifyContent: 'center', marginTop: 24, minHeight: 56 },
+  purchaseBtn: { width: '100%', borderRadius: 16, paddingVertical: 20, alignItems: 'center', justifyContent: 'center', marginTop: 28, minHeight: 60, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 6 },
   purchaseBtnDisabled: { opacity: 0.7 },
-  purchaseText: { fontFamily: fontFamily.system, color: '#fff', fontSize: 15, fontWeight: fw.medium, textAlign: 'center' as const },
+  purchaseText: { fontFamily: fontFamily.system, color: '#fff', fontSize: 16, fontWeight: fw.semibold, textAlign: 'center' as const },
   trialNote: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, textAlign: 'center' as const, marginTop: 8 },
-  comparisonSection: { width: '100%', marginTop: 32 },
-  comparisonTitle: { fontFamily: fontFamily.system, fontSize: 17, fontWeight: fw.semibold, letterSpacing: -0.2, marginBottom: 12 },
+  featureDivider: { height: StyleSheet.hairlineWidth, marginLeft: 48, marginVertical: 2 },
+  comparisonSection: { width: '100%', marginTop: 36 },
+  comparisonTitle: { fontFamily: fontFamily.system, fontSize: 18, fontWeight: fw.bold, letterSpacing: -0.2, marginBottom: 14 },
   comparisonHeader: { flexDirection: 'row' as const, paddingVertical: 8 },
   compHeaderLabel: { flex: 1, fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium },
   compHeaderValue: { width: 56, textAlign: 'center' as const, fontFamily: fontFamily.system, fontSize: 10, fontWeight: fw.bold, letterSpacing: 0.6 },

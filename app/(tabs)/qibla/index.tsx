@@ -194,8 +194,8 @@ export default function QiblaScreen() {
 
   const renderCompassSvg = useCallback(() => (
     <Svg width={size} height={size}>
-      <Circle cx={center} cy={center} r={radius} stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'} strokeWidth={1.5} fill="none" />
-      <Circle cx={center} cy={center} r={radius * 0.65} stroke={isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'} strokeWidth={1} fill="none" />
+      <Circle cx={center} cy={center} r={radius} stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'} strokeWidth={1.5} fill="none" />
+      <Circle cx={center} cy={center} r={radius * 0.65} stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'} strokeWidth={1} fill="none" />
       {directions.map((dir, i) => {
         const angle = ((i * 45 - 90) * Math.PI) / 180;
         const textR = radius + 16;
@@ -208,8 +208,8 @@ export default function QiblaScreen() {
         const isCardinal = i % 2 === 0;
         return (
           <G key={dir}>
-            <Line x1={tickStart} y1={tickSY} x2={tickEnd} y2={tickEY} stroke={dir === 'N' ? '#D4574E' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)')} strokeWidth={isCardinal ? 1.5 : 1} />
-            <SvgText x={tx} y={ty + 4} textAnchor="middle" fontSize={isCardinal ? 12 : 10} fontWeight={isCardinal ? '600' : '400'} fill={dir === 'N' ? '#D4574E' : (isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)')}>
+            <Line x1={tickStart} y1={tickSY} x2={tickEnd} y2={tickEY} stroke={dir === 'N' ? '#D4574E' : (isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.16)')} strokeWidth={isCardinal ? 2 : 1} />
+            <SvgText x={tx} y={ty + 4} textAnchor="middle" fontSize={isCardinal ? 14 : 11} fontWeight={isCardinal ? '700' : '400'} fill={dir === 'N' ? '#D4574E' : (isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.45)')}>
               {dir}
             </SvgText>
           </G>
@@ -226,8 +226,8 @@ export default function QiblaScreen() {
       })}
       <Line x1={center} y1={center} x2={pointerEndX} y2={pointerEndY} stroke={isPointingToQibla ? '#6B9E91' : Colors.primary} strokeWidth={2.5} strokeLinecap="round" />
       <Circle cx={center} cy={center} r={4} fill={isPointingToQibla ? '#6B9E91' : Colors.primary} />
-      <Circle cx={kaabaPx} cy={kaabaPy} r={12} fill={Colors.gold} />
-      <SvgText x={kaabaPx} y={kaabaPy + 5} textAnchor="middle" fontSize={11} fontWeight="800" fill="#fff">۞</SvgText>
+      <Circle cx={kaabaPx} cy={kaabaPy} r={15} fill={Colors.gold} />
+      <SvgText x={kaabaPx} y={kaabaPy + 6} textAnchor="middle" fontSize={14} fontWeight="800" fill="#fff">۞</SvgText>
     </Svg>
   ), [isDark, isPointingToQibla, qiblaAngle, size, center, radius, kaabaPx, kaabaPy, pointerEndX, pointerEndY]);
 
@@ -237,7 +237,7 @@ export default function QiblaScreen() {
       contentContainerStyle={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}
     >
       <Text style={[styles.title, { color: theme.text }]}>Qibla</Text>
-      <Text style={[styles.subtitle, { color: theme.textTertiary }]}>Direction to the Kaaba</Text>
+      <Text style={[styles.subtitle, { color: theme.textTertiary }]}>Calibrated digital compass for precise Qibla direction.</Text>
 
       {isPointingToQibla && (
         <View style={[styles.alignedBadge, { backgroundColor: isDark ? 'rgba(107,158,145,0.15)' : 'rgba(107,158,145,0.1)' }]}>
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, marginTop: 4, marginBottom: 20, alignSelf: 'flex-start' },
   alignedBadge: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, marginBottom: 12 },
   alignedText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium },
-  compassCard: { borderRadius: 14, padding: 20, marginBottom: 16, alignItems: 'center' },
+  compassCard: { borderRadius: 14, padding: 24, marginBottom: 16, alignItems: 'center' },
   headingRow: { flexDirection: 'row' as const, alignItems: 'center', marginTop: 12, gap: 6 },
   headingText: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium },
   accuracyDot: { width: 5, height: 5, borderRadius: 3, marginLeft: 8 },

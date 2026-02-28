@@ -127,8 +127,8 @@ export default function HomeScreen() {
             <View style={styles.countdownRow}>
               <CountdownRing
                 progress={progress}
-                size={56}
-                strokeWidth={3}
+                size={64}
+                strokeWidth={4}
                 color={nextPrayer ? PRAYER_ACCENT[nextPrayer.name] || Colors.primary : Colors.primary}
                 bgColor={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}
               >
@@ -159,7 +159,7 @@ export default function HomeScreen() {
                   style={[
                     styles.prayerRow,
                     isNext && [styles.prayerRowActive, {
-                      backgroundColor: isDark ? 'rgba(107,158,145,0.08)' : 'rgba(107,158,145,0.05)',
+                      backgroundColor: isDark ? 'rgba(107,158,145,0.14)' : 'rgba(107,158,145,0.09)',
                     }],
                   ]}
                 >
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 36,
   },
   heroLabel: {
     fontFamily: fontFamily.system,
@@ -315,17 +315,17 @@ const styles = StyleSheet.create({
   },
   heroName: {
     fontFamily: fontFamily.system,
-    fontSize: 42,
+    fontSize: 44,
     fontWeight: fw.bold,
     letterSpacing: -0.5,
-    lineHeight: 48,
+    lineHeight: 50,
   },
   heroTime: {
     fontFamily: fontFamily.system,
-    fontSize: 20,
-    fontWeight: fw.medium,
+    fontSize: 24,
+    fontWeight: fw.semibold,
     letterSpacing: -0.3,
-    marginTop: 6,
+    marginTop: 8,
   },
   countdownRow: {
     flexDirection: 'row' as const,
@@ -335,8 +335,8 @@ const styles = StyleSheet.create({
   },
   countdownMini: {
     fontFamily: fontFamily.mono,
-    fontSize: 11,
-    fontWeight: fw.medium,
+    fontSize: 13,
+    fontWeight: fw.semibold,
   },
   countdownLabel: {
     fontFamily: fontFamily.system,
@@ -363,15 +363,15 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 14,
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 4,
-    marginBottom: 16,
+    marginBottom: 18,
   },
   prayerRow: {
     flexDirection: 'row' as const,
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 13,
+    paddingVertical: 15,
     paddingHorizontal: 14,
     borderRadius: 10,
   },
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     borderRadius: 14,
-    padding: 16,
+    padding: 14,
     flexDirection: 'row' as const,
     alignItems: 'center',
     gap: 10,
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   actionLabel: {
     fontFamily: fontFamily.system,
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: fw.medium,
     letterSpacing: -0.2,
   },
@@ -467,8 +467,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row' as const,
     alignItems: 'center',
     borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 14,
     gap: 12,
   },
   radioIconWrap: {
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   radioTitle: {
     fontFamily: fontFamily.system,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: fw.medium,
     letterSpacing: -0.2,
   },

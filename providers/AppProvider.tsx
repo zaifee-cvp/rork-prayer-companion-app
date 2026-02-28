@@ -70,7 +70,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   showArabic: true,
   showTranslation: true,
   transliterationFontSize: 15,
-  arabicFontSize: 24,
+  arabicFontSize: 26,
   selectedReciterId: 'alafasy',
   autoPlayNextAyah: false,
 };

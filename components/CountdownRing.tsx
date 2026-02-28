@@ -15,7 +15,7 @@ interface CountdownRingProps {
 export default function CountdownRing({
   progress,
   size = 160,
-  strokeWidth = 8,
+  strokeWidth = 10,
   color = Colors.primary,
   bgColor,
   children,

@@ -117,7 +117,11 @@ export default function QuranScreen() {
             <Text style={[styles.surahArabic, { color: accessible ? Colors.primary : theme.textTertiary }]}>
               {item.nameArabic}
             </Text>
-            {!accessible && <Lock size={13} color={theme.textTertiary} style={styles.lockIcon} strokeWidth={1.8} />}
+            {!accessible && (
+              <View style={[styles.lockBadge, { backgroundColor: isDark ? 'rgba(196,162,101,0.12)' : 'rgba(196,162,101,0.08)' }]}>
+                <Lock size={11} color={Colors.gold} strokeWidth={2} />
+              </View>
+            )}
           </View>
         </TouchableOpacity>
       );
@@ -177,7 +181,7 @@ export default function QuranScreen() {
           <View>
             <Text style={[styles.title, { color: theme.text }]}>Quran</Text>
             <Text style={[styles.subtitle, { color: theme.textTertiary }]}>
-              {settings.isPremium ? '114 Surahs' : `${PREVIEW_SURAHS.length} preview surahs available`}
+              {settings.isPremium ? 'Read with clarity and focus.' : `${PREVIEW_SURAHS.length} preview surahs · Read with clarity and focus.`}
             </Text>
           </View>
           {activeTab !== 'translation' && (
@@ -316,11 +320,11 @@ const styles = StyleSheet.create({
   currentLangText: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium },
   searchBar: { flexDirection: 'row' as const, alignItems: 'center', borderRadius: 12, paddingHorizontal: 14, height: 42, gap: 10, marginBottom: 12 },
   searchInput: { fontFamily: fontFamily.system, flex: 1, fontSize: 15, fontWeight: fw.regular, height: 42 },
-  tabs: { flexDirection: 'row' as const, marginBottom: 12, gap: 4 },
-  tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
+  tabs: { flexDirection: 'row' as const, marginBottom: 14, gap: 6 },
+  tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   tabActive: {},
   tabInner: { flexDirection: 'row' as const, alignItems: 'center', gap: 5 },
-  tabText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium },
+  tabText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.semibold },
   list: { paddingHorizontal: 24, paddingBottom: 40 },
   radioButton: { flexDirection: 'row' as const, alignItems: 'center', marginHorizontal: 24, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, gap: 12 },
   radioIconBg: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
@@ -334,8 +338,8 @@ const styles = StyleSheet.create({
   surahName: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium, letterSpacing: -0.2 },
   surahMeaning: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 3 },
   surahRight: { alignItems: 'flex-end' },
-  surahArabic: { fontFamily: fontFamily.system, fontSize: 18, fontWeight: fw.regular },
-  lockIcon: { marginTop: 4 },
+  surahArabic: { fontFamily: fontFamily.system, fontSize: 20, fontWeight: fw.regular },
+  lockBadge: { marginTop: 4, width: 22, height: 22, borderRadius: 7, justifyContent: 'center' as const, alignItems: 'center' as const },
   juzRow: { flexDirection: 'row' as const, alignItems: 'center', borderRadius: 12, padding: 16, gap: 12 },
   juzBadge: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   juzInfo: { flex: 1 },

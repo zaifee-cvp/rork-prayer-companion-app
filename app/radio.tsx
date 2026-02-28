@@ -8,6 +8,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -135,8 +136,48 @@ export default function RadioScreen() {
     setRadioState('idle');
   }, []);
 
+  const waveAnims = useRef(
+    Array.from({ length: 5 }, () => new Animated.Value(0.3))
+  ).current;
+
+  useEffect(() => {
+    if (radioState === 'playing') {
+      const animations = waveAnims.map((anim, i) =>
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(anim, {
+              toValue: 0.7 + Math.random() * 0.3,
+              duration: 400 + i * 120,
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim, {
+              toValue: 0.2 + Math.random() * 0.2,
+              duration: 500 + i * 100,
+              useNativeDriver: true,
+            }),
+          ])
+        )
+      );
+      animations.forEach((a) => a.start());
+      return () => { animations.forEach((a) => a.stop()); };
+    } else {
+      waveAnims.forEach((anim) => {
+        Animated.timing(anim, { toValue: 0.3, duration: 300, useNativeDriver: true }).start();
+      });
+    }
+  }, [radioState, waveAnims]);
+
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <LinearGradient
+        colors={isDark
+          ? ['rgba(107,158,145,0.06)', 'transparent', 'rgba(107,158,145,0.03)']
+          : ['rgba(107,158,145,0.04)', 'transparent', 'rgba(107,158,145,0.02)']
+        }
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
@@ -175,10 +216,27 @@ export default function RadioScreen() {
               ) : radioState === 'playing' ? (
                 <Pause size={44} color="#fff" strokeWidth={2} />
               ) : (
-                <Play size={44} color={isDark ? Colors.primary : Colors.primaryDark} strokeWidth={2} style={{ marginLeft: 4 }} />
+                <Play size={48} color={isDark ? Colors.primary : Colors.primaryDark} strokeWidth={2} style={{ marginLeft: 4 }} />
               )}
             </TouchableOpacity>
           </Animated.View>
+
+          {radioState === 'playing' && (
+            <View style={styles.waveformRow}>
+              {waveAnims.map((anim, i) => (
+                <Animated.View
+                  key={`wave-${i}`}
+                  style={[
+                    styles.waveBar,
+                    {
+                      backgroundColor: Colors.primary,
+                      transform: [{ scaleY: anim }],
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          )}
 
           {radioState === 'playing' && (
             <View style={styles.liveIndicator}>
@@ -256,16 +314,18 @@ const styles = StyleSheet.create({
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   playerSection: { alignItems: 'center', justifyContent: 'center', marginBottom: 40, width: 200, height: 200 },
   playerCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 12,
   },
-  playerTouchable: { width: 140, height: 140, borderRadius: 70, alignItems: 'center', justifyContent: 'center' },
+  playerTouchable: { width: 160, height: 160, borderRadius: 80, alignItems: 'center', justifyContent: 'center' },
+  waveformRow: { flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 20, height: 28 },
+  waveBar: { width: 3, height: 28, borderRadius: 2 },
   liveIndicator: { flexDirection: 'row' as const, alignItems: 'center', gap: 6, marginTop: 16, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, backgroundColor: 'rgba(212,87,78,0.1)' },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.danger },
   liveText: { fontFamily: fontFamily.system, fontSize: 10, fontWeight: fw.bold, color: Colors.danger, letterSpacing: 1.2 },
@@ -279,10 +339,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 14,
-    minWidth: 200,
+    paddingHorizontal: 36,
+    paddingVertical: 18,
+    borderRadius: 16,
+    minWidth: 220,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
   },
   actionBtnText: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium, color: '#fff' },
   disclaimer: { paddingHorizontal: 32 },
