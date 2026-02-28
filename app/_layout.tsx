@@ -55,11 +55,11 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, ErrorBounda
 }
 
 const ebStyles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#060B0E' },
-  title: { fontSize: 22, fontWeight: '700', color: '#E8F0F4', marginBottom: 12 },
-  message: { fontSize: 14, color: '#7A8E9A', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
-  button: { backgroundColor: '#00D4E6', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 22 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#1A1A1C' },
+  title: { fontSize: 22, fontWeight: '600', color: '#F0EFED', marginBottom: 12, letterSpacing: -0.3 },
+  message: { fontSize: 14, color: '#8E8E91', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  button: { backgroundColor: '#6B9E91', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12 },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '500' },
 });
 
 function RootLayoutNav() {

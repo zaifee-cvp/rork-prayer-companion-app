@@ -104,12 +104,12 @@ export default function QuranScreen() {
           activeOpacity={0.7}
           testID={`surah-${item.number}`}
         >
-          <View style={[styles.numberBadge, { backgroundColor: isDark ? 'rgba(0,212,230,0.1)' : 'rgba(0,212,230,0.06)' }]}>
+          <View style={[styles.numberBadge, { backgroundColor: isDark ? 'rgba(107,158,145,0.1)' : 'rgba(107,158,145,0.06)' }]}>
             <Text style={[styles.numberText, { color: Colors.primary }]}>{item.number}</Text>
           </View>
           <View style={styles.surahInfo}>
             <Text style={[styles.surahName, { color: theme.text }]}>{item.name}</Text>
-            <Text style={[styles.surahMeaning, { color: theme.textSecondary }]}>
+            <Text style={[styles.surahMeaning, { color: theme.textTertiary }]}>
               {item.meaning} · {item.verses} verses · {item.type}
             </Text>
           </View>
@@ -117,7 +117,7 @@ export default function QuranScreen() {
             <Text style={[styles.surahArabic, { color: accessible ? Colors.primary : theme.textTertiary }]}>
               {item.nameArabic}
             </Text>
-            {!accessible && <Lock size={14} color={theme.textTertiary} style={styles.lockIcon} />}
+            {!accessible && <Lock size={13} color={theme.textTertiary} style={styles.lockIcon} strokeWidth={1.8} />}
           </View>
         </TouchableOpacity>
       );
@@ -132,7 +132,7 @@ export default function QuranScreen() {
         <TouchableOpacity
           style={[
             styles.translationRow,
-            { backgroundColor: isSelected ? (isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.05)') : theme.surface },
+            { backgroundColor: isSelected ? (isDark ? 'rgba(107,158,145,0.08)' : 'rgba(107,158,145,0.05)') : theme.surface },
             isSelected && { borderColor: Colors.primary, borderWidth: 1.5 },
           ]}
           onPress={() => handleSelectTranslation(item)}
@@ -144,13 +144,13 @@ export default function QuranScreen() {
             <Text style={[styles.translationName, { color: theme.text }]} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={[styles.translationAuthor, { color: theme.textSecondary }]} numberOfLines={1}>
+            <Text style={[styles.translationAuthor, { color: theme.textTertiary }]} numberOfLines={1}>
               {item.author}
             </Text>
           </View>
           {isSelected && (
             <View style={[styles.checkBadge, { backgroundColor: Colors.primary }]}>
-              <Check size={14} color="#fff" strokeWidth={3} />
+              <Check size={13} color="#fff" strokeWidth={3} />
             </View>
           )}
         </TouchableOpacity>
@@ -162,7 +162,7 @@ export default function QuranScreen() {
   const renderSectionHeader = useCallback(
     ({ section }: { section: { title: string } }) => (
       <View style={[styles.sectionHeader, { backgroundColor: theme.background }]}>
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{section.title}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textTertiary }]}>{section.title}</Text>
       </View>
     ),
     [theme],
@@ -172,17 +172,17 @@ export default function QuranScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.titleRow}>
           <View>
             <Text style={[styles.title, { color: theme.text }]}>Quran</Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            <Text style={[styles.subtitle, { color: theme.textTertiary }]}>
               {settings.isPremium ? '114 Surahs' : `${PREVIEW_SURAHS.length} preview surahs available`}
             </Text>
           </View>
           {activeTab !== 'translation' && (
-            <View style={[styles.currentLangChip, { backgroundColor: isDark ? 'rgba(0,212,230,0.1)' : 'rgba(0,212,230,0.06)' }]}>
-              <Globe size={13} color={Colors.primary} />
+            <View style={[styles.currentLangChip, { backgroundColor: isDark ? 'rgba(107,158,145,0.1)' : 'rgba(107,158,145,0.06)' }]}>
+              <Globe size={12} color={Colors.primary} strokeWidth={1.8} />
               <Text style={[styles.currentLangText, { color: Colors.primary }]}>
                 {currentTranslation.flag} {currentTranslation.language}
               </Text>
@@ -191,7 +191,7 @@ export default function QuranScreen() {
         </View>
 
         <View style={[styles.searchBar, { backgroundColor: theme.surfaceSecondary }]}>
-          <Search size={18} color={theme.textTertiary} />
+          <Search size={16} color={theme.textTertiary} strokeWidth={1.8} />
           <TextInput
             style={[styles.searchInput, { color: theme.text }]}
             placeholder={searchPlaceholder}
@@ -206,12 +206,12 @@ export default function QuranScreen() {
           {(['surah', 'juz', 'translation'] as TabType[]).map((tab) => (
             <TouchableOpacity
               key={tab}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              style={[styles.tab, activeTab === tab && [styles.tabActive, { backgroundColor: isDark ? 'rgba(107,158,145,0.12)' : 'rgba(107,158,145,0.08)' }]]}
               onPress={() => { setActiveTab(tab); setSearch(''); }}
             >
               {tab === 'translation' ? (
                 <View style={styles.tabInner}>
-                  <Globe size={14} color={activeTab === tab ? Colors.primary : theme.textSecondary} />
+                  <Globe size={13} color={activeTab === tab ? Colors.primary : theme.textSecondary} strokeWidth={1.8} />
                   <Text style={[styles.tabText, { color: activeTab === tab ? Colors.primary : theme.textSecondary }]}>
                     Translation
                   </Text>
@@ -227,29 +227,19 @@ export default function QuranScreen() {
       </View>
 
       <TouchableOpacity
-        style={[
-          styles.radioButton,
-          {
-            backgroundColor: isDark ? 'rgba(0,212,230,0.1)' : 'rgba(0,212,230,0.06)',
-            borderColor: isDark ? 'rgba(0,212,230,0.2)' : 'rgba(0,212,230,0.15)',
-          },
-        ]}
+        style={[styles.radioButton, { backgroundColor: isDark ? 'rgba(107,158,145,0.08)' : 'rgba(107,158,145,0.05)', borderColor: isDark ? 'rgba(107,158,145,0.15)' : 'rgba(107,158,145,0.1)' }]}
         onPress={() => router.push('/radio' as any)}
         activeOpacity={0.7}
         testID="live-radio-btn"
       >
         <View style={[styles.radioIconBg, { backgroundColor: Colors.primary }]}>
-          <Radio size={16} color="#fff" strokeWidth={2.5} />
+          <Radio size={14} color="#fff" strokeWidth={2} />
         </View>
         <View style={styles.radioButtonInfo}>
-          <Text style={[styles.radioButtonTitle, { color: theme.text }]}>
-            Live Quran Radio
-          </Text>
-          <Text style={[styles.radioButtonSub, { color: theme.textSecondary }]} numberOfLines={1}>
-            Tap to listen live
-          </Text>
+          <Text style={[styles.radioButtonTitle, { color: theme.text }]}>Live Quran Radio</Text>
+          <Text style={[styles.radioButtonSub, { color: theme.textTertiary }]} numberOfLines={1}>Tap to listen live</Text>
         </View>
-        <ChevronRight size={18} color={theme.textTertiary} />
+        <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
       </TouchableOpacity>
 
       {activeTab === 'surah' ? (
@@ -271,21 +261,18 @@ export default function QuranScreen() {
               <TouchableOpacity
                 style={[styles.juzRow, { backgroundColor: theme.surface }]}
                 onPress={() => {
-                  if (!accessible) {
-                    router.push('/paywall' as any);
-                    return;
-                  }
+                  if (!accessible) { router.push('/paywall' as any); return; }
                   router.push(`/quran/${juz.startSurah}` as any);
                 }}
                 activeOpacity={0.7}
                 testID={`juz-${juz.juz}`}
               >
-                <View style={[styles.juzBadge, { backgroundColor: isDark ? 'rgba(255,176,32,0.1)' : 'rgba(255,176,32,0.06)' }]}>
-                  <Star size={16} color={Colors.gold} />
+                <View style={[styles.juzBadge, { backgroundColor: isDark ? 'rgba(196,162,101,0.1)' : 'rgba(196,162,101,0.06)' }]}>
+                  <Star size={15} color={Colors.gold} strokeWidth={1.8} />
                 </View>
                 <View style={styles.juzInfo}>
                   <Text style={[styles.juzName, { color: theme.text }]}>Juz {juz.juz}</Text>
-                  <Text style={[styles.juzStart, { color: theme.textSecondary }]}>
+                  <Text style={[styles.juzStart, { color: theme.textTertiary }]}>
                     {startSurah?.name ?? ''} · Ayah {juz.startAyah}
                   </Text>
                 </View>
@@ -294,7 +281,7 @@ export default function QuranScreen() {
                     {startSurah.nameArabic}
                   </Text>
                 )}
-                {!accessible && <Lock size={14} color={theme.textTertiary} style={{ marginLeft: 8 }} />}
+                {!accessible && <Lock size={13} color={theme.textTertiary} style={{ marginLeft: 8 }} strokeWidth={1.8} />}
               </TouchableOpacity>
             );
           }}
@@ -321,177 +308,46 @@ export default function QuranScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 20 },
-  titleRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingTop: 8,
-  },
-  title: { fontFamily: fontFamily.system, fontSize: 34, fontWeight: fw.bold, letterSpacing: 0.37, lineHeight: 41 },
-  subtitle: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, letterSpacing: -0.08, marginTop: 4, marginBottom: 16 },
-  currentLangChip: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginTop: 6,
-  },
-  currentLangText: {
-    fontFamily: fontFamily.system,
-    fontSize: 12,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.08,
-  },
-  searchBar: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    height: 44,
-    gap: 10,
-    marginBottom: 12,
-  },
-  searchInput: { fontFamily: fontFamily.system, flex: 1, fontSize: 16, fontWeight: fw.regular, letterSpacing: -0.32, height: 44 },
-  tabs: {
-    flexDirection: 'row' as const,
-    marginBottom: 12,
-    gap: 4,
-  },
-  tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  tabActive: {
-    backgroundColor: 'rgba(0,212,230,0.1)',
-  },
-  tabInner: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 5,
-  },
-  tabText: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.semibold, letterSpacing: -0.24 },
-  list: { paddingHorizontal: 20, paddingBottom: 40 },
-  radioButton: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 12,
-  },
-  radioIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  header: { paddingHorizontal: 24 },
+  titleRow: { flexDirection: 'row' as const, justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 8 },
+  title: { fontFamily: fontFamily.system, fontSize: 28, fontWeight: fw.bold, letterSpacing: -0.3, lineHeight: 34 },
+  subtitle: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, marginTop: 4, marginBottom: 16 },
+  currentLangChip: { flexDirection: 'row' as const, alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, marginTop: 6 },
+  currentLangText: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium },
+  searchBar: { flexDirection: 'row' as const, alignItems: 'center', borderRadius: 12, paddingHorizontal: 14, height: 42, gap: 10, marginBottom: 12 },
+  searchInput: { fontFamily: fontFamily.system, flex: 1, fontSize: 15, fontWeight: fw.regular, height: 42 },
+  tabs: { flexDirection: 'row' as const, marginBottom: 12, gap: 4 },
+  tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
+  tabActive: {},
+  tabInner: { flexDirection: 'row' as const, alignItems: 'center', gap: 5 },
+  tabText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium },
+  list: { paddingHorizontal: 24, paddingBottom: 40 },
+  radioButton: { flexDirection: 'row' as const, alignItems: 'center', marginHorizontal: 24, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, gap: 12 },
+  radioIconBg: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   radioButtonInfo: { flex: 1 },
-  radioButtonTitle: {
-    fontFamily: fontFamily.system,
-    fontSize: 14,
-    fontWeight: fw.bold,
-    letterSpacing: 0.5,
-  },
-  radioButtonSub: {
-    fontFamily: fontFamily.system,
-    fontSize: 12,
-    fontWeight: fw.regular,
-    marginTop: 2,
-  },
-  surahRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    borderRadius: 14,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  numberBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  numberText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.semibold, letterSpacing: -0.15 },
+  radioButtonTitle: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium },
+  radioButtonSub: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 1 },
+  surahRow: { flexDirection: 'row' as const, alignItems: 'center', borderRadius: 12, padding: 14 },
+  numberBadge: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  numberText: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.medium },
   surahInfo: { flex: 1, marginLeft: 12 },
-  surahName: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold, letterSpacing: -0.32 },
+  surahName: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium, letterSpacing: -0.2 },
   surahMeaning: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 3 },
   surahRight: { alignItems: 'flex-end' },
   surahArabic: { fontFamily: fontFamily.system, fontSize: 18, fontWeight: fw.regular },
   lockIcon: { marginTop: 4 },
-  juzRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    borderRadius: 14,
-    padding: 16,
-    gap: 12,
-  },
-  juzBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  juzRow: { flexDirection: 'row' as const, alignItems: 'center', borderRadius: 12, padding: 16, gap: 12 },
+  juzBadge: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   juzInfo: { flex: 1 },
-  juzName: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold, letterSpacing: -0.32 },
+  juzName: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium, letterSpacing: -0.2 },
   juzStart: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 3 },
   juzArabic: { fontFamily: fontFamily.system, fontSize: 18, fontWeight: fw.regular },
-  translationRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    borderRadius: 14,
-    padding: 14,
-    gap: 12,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  translationFlag: {
-    fontSize: 24,
-    width: 36,
-    textAlign: 'center' as const,
-  },
+  translationRow: { flexDirection: 'row' as const, alignItems: 'center', borderRadius: 12, padding: 14, gap: 12, borderWidth: 1.5, borderColor: 'transparent' },
+  translationFlag: { fontSize: 22, width: 34, textAlign: 'center' as const },
   translationInfo: { flex: 1 },
-  translationName: {
-    fontFamily: fontFamily.system,
-    fontSize: 15,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.24,
-  },
-  translationAuthor: {
-    fontFamily: fontFamily.system,
-    fontSize: 12,
-    fontWeight: fw.regular,
-    marginTop: 2,
-  },
-  checkBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sectionHeader: {
-    paddingVertical: 8,
-    paddingTop: 14,
-  },
-  sectionTitle: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase' as const,
-  },
+  translationName: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium },
+  translationAuthor: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 2 },
+  checkBadge: { width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+  sectionHeader: { paddingVertical: 8, paddingTop: 14 },
+  sectionTitle: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium, letterSpacing: 0.8, textTransform: 'uppercase' as const },
 });

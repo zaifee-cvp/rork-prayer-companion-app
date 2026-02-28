@@ -1,13 +1,13 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
   Compass,
@@ -20,8 +20,8 @@ import {
   Sunrise,
   Sunset,
   CloudSun,
-  Clock,
   Radio,
+  MapPin,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -36,25 +36,43 @@ import {
 } from '@/utils/prayer-times';
 import { formatHijriDate } from '@/utils/hijri';
 
-const PRAYER_ICONS: Record<string, React.ReactNode> = {
-  fajr: <Sunrise size={16} color="#33ECFF" />,
-  sunrise: <Sun size={16} color="#FFB020" />,
-  dhuhr: <CloudSun size={16} color="#FF8C42" />,
-  asr: <Sun size={16} color="#FFD166" />,
-  maghrib: <Sunset size={16} color="#FF6B6B" />,
-  isha: <Moon size={16} color="#7A8EFF" />,
+const PRAYER_ICONS: Record<string, (color: string) => React.ReactNode> = {
+  fajr: (c) => <Sunrise size={15} color={c} strokeWidth={1.8} />,
+  sunrise: (c) => <Sun size={15} color={c} strokeWidth={1.8} />,
+  dhuhr: (c) => <CloudSun size={15} color={c} strokeWidth={1.8} />,
+  asr: (c) => <Sun size={15} color={c} strokeWidth={1.8} />,
+  maghrib: (c) => <Sunset size={15} color={c} strokeWidth={1.8} />,
+  isha: (c) => <Moon size={15} color={c} strokeWidth={1.8} />,
+};
+
+const PRAYER_ACCENT: Record<string, string> = {
+  fajr: '#7BAFA2',
+  sunrise: '#C4A265',
+  dhuhr: '#C49565',
+  asr: '#C4A265',
+  maghrib: '#C47B65',
+  isha: '#8B7BAF',
 };
 
 export default function HomeScreen() {
   const { theme, isDark, settings, prayerTimes, nextPrayer, hijriDate, now, city, isLoading } = useApp();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!isLoading && !settings.onboardingComplete) {
       router.replace('/onboarding' as any);
     }
   }, [isLoading, settings.onboardingComplete]);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const timeUntil = useMemo(() => {
     if (!nextPrayer) return null;
@@ -74,7 +92,6 @@ export default function HomeScreen() {
 
   const gregorianDate = now.toLocaleDateString('en-US', {
     weekday: 'long',
-    year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
@@ -83,130 +100,113 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8 }]}
+      <Animated.ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 12 }]}
         showsVerticalScrollIndicator={false}
+        style={{ opacity: fadeAnim }}
       >
-        <View style={styles.header}>
-          <Text style={[styles.greeting, { color: theme.textSecondary }]}>
-            {getGreeting()}
-          </Text>
-          <Text style={[styles.title, { color: theme.text }]}>Today</Text>
-          <Text style={[styles.dateText, { color: theme.textSecondary }]}>
-            {gregorianDate}
+        <View style={styles.locationRow}>
+          <MapPin size={12} color={theme.textTertiary} strokeWidth={1.8} />
+          <Text style={[styles.locationText, { color: theme.textTertiary }]}>
+            {city.name}, {city.country}
           </Text>
         </View>
 
-        <LinearGradient
-          colors={isDark ? ['#0A2028', '#061418'] : ['#00899A', '#006B78']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.nextPrayerCard}
-        >
-          <View style={styles.nextPrayerTop}>
-            <View style={styles.nextPrayerInfo}>
-              <Text style={styles.nextPrayerLabel}>Next Prayer</Text>
-              <Text style={styles.nextPrayerName}>
-                {nextPrayer ? PRAYER_DISPLAY_NAMES[nextPrayer.name] : 'All done'}
-              </Text>
-              <Text style={styles.nextPrayerTime}>
-                {nextPrayer ? formatTime(nextPrayer.time, settings.use24hFormat) : '—'}
-              </Text>
-              <View style={styles.locationRow}>
-                <Text style={styles.locationText}>{city.name}, {city.country}</Text>
-              </View>
+        <View style={styles.heroSection}>
+          <Text style={[styles.heroLabel, { color: theme.textSecondary }]}>
+            {nextPrayer ? 'Next Prayer' : 'All prayers done'}
+          </Text>
+          <Text style={[styles.heroName, { color: theme.text }]}>
+            {nextPrayer ? PRAYER_DISPLAY_NAMES[nextPrayer.name] : 'Rest well'}
+          </Text>
+          <Text style={[styles.heroTime, { color: Colors.primary }]}>
+            {nextPrayer ? formatTime(nextPrayer.time, settings.use24hFormat) : '—'}
+          </Text>
+
+          {timeUntil && (
+            <View style={styles.countdownRow}>
+              <CountdownRing
+                progress={progress}
+                size={56}
+                strokeWidth={3}
+                color={nextPrayer ? PRAYER_ACCENT[nextPrayer.name] || Colors.primary : Colors.primary}
+                bgColor={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}
+              >
+                <Text style={[styles.countdownMini, { color: theme.textSecondary }]}>
+                  {String(timeUntil.hours).padStart(2, '0')}:{String(timeUntil.minutes).padStart(2, '0')}
+                </Text>
+              </CountdownRing>
+              <Text style={[styles.countdownLabel, { color: theme.textTertiary }]}>remaining</Text>
             </View>
-            <CountdownRing
-              progress={progress}
-              size={110}
-              strokeWidth={6}
-              color={Colors.gold}
-              bgColor="rgba(255,255,255,0.15)"
-            >
-              {timeUntil ? (
-                <View style={styles.countdownInner}>
-                  <Text style={styles.countdownValue}>
-                    {String(timeUntil.hours).padStart(2, '0')}:{String(timeUntil.minutes).padStart(2, '0')}
-                  </Text>
-                  <Text style={styles.countdownSec}>
-                    :{String(timeUntil.seconds).padStart(2, '0')}
-                  </Text>
-                </View>
-              ) : (
-                <Moon size={28} color={Colors.gold} />
-              )}
-            </CountdownRing>
-          </View>
-        </LinearGradient>
+          )}
+        </View>
+
+        <View style={[styles.dateRow, { borderTopColor: theme.border }]}>
+          <Text style={[styles.dateGregorian, { color: theme.textSecondary }]}>{gregorianDate}</Text>
+          <Text style={[styles.dateHijri, { color: theme.textTertiary }]}>
+            {formatHijriDate(hijriDate)}
+          </Text>
+        </View>
 
         <View style={[styles.card, { backgroundColor: theme.surface }]}>
-          <View style={styles.cardHeader}>
-            <Clock size={18} color={Colors.primary} />
-            <Text style={[styles.cardTitle, { color: theme.text }]}>Prayer Times</Text>
-          </View>
-          {prayerList.map((name) => {
+          {prayerList.map((name, index) => {
             const isNext = nextPrayer?.name === name;
+            const isPast = prayerTimes[name] < now && !isNext;
+            const accentColor = PRAYER_ACCENT[name];
             return (
-              <View
-                key={name}
-                style={[
-                  styles.prayerRow,
-                  isNext && { backgroundColor: isDark ? 'rgba(0,212,230,0.1)' : 'rgba(0,212,230,0.06)', borderRadius: 10 },
-                ]}
-              >
-                <View style={styles.prayerRowLeft}>
-                  {PRAYER_ICONS[name]}
-                  <Text
-                    style={[
-                      styles.prayerRowName,
-                      { color: isNext ? Colors.primary : theme.text },
-                      isNext && { fontWeight: '700' as const },
-                    ]}
-                  >
-                    {PRAYER_DISPLAY_NAMES[name]}
-                  </Text>
-                </View>
-                <Text
+              <View key={name}>
+                <View
                   style={[
-                    styles.prayerRowTime,
-                    { color: isNext ? Colors.primary : theme.textSecondary },
-                    isNext && { fontWeight: '700' as const },
+                    styles.prayerRow,
+                    isNext && [styles.prayerRowActive, {
+                      backgroundColor: isDark ? 'rgba(107,158,145,0.08)' : 'rgba(107,158,145,0.05)',
+                    }],
                   ]}
                 >
-                  {formatTime(prayerTimes[name], settings.use24hFormat)}
-                </Text>
+                  <View style={styles.prayerRowLeft}>
+                    {PRAYER_ICONS[name](isPast ? theme.textTertiary : accentColor)}
+                    <Text
+                      style={[
+                        styles.prayerRowName,
+                        { color: isPast ? theme.textTertiary : (isNext ? theme.text : theme.text) },
+                        isNext && { fontWeight: '600' as const },
+                      ]}
+                    >
+                      {PRAYER_DISPLAY_NAMES[name]}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.prayerRowTime,
+                      { color: isPast ? theme.textTertiary : (isNext ? Colors.primary : theme.textSecondary) },
+                      isNext && { fontWeight: '600' as const },
+                    ]}
+                  >
+                    {formatTime(prayerTimes[name], settings.use24hFormat)}
+                  </Text>
+                </View>
+                {index < prayerList.length - 1 && !isNext && nextPrayer?.name !== prayerList[index + 1] && (
+                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                )}
               </View>
             );
           })}
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.surface }]}>
-          <View style={styles.cardHeader}>
-            <Moon size={18} color={Colors.gold} />
-            <Text style={[styles.cardTitle, { color: theme.text }]}>Hijri Date</Text>
-          </View>
-          <Text style={[styles.hijriMain, { color: theme.text }]}>
-            {formatHijriDate(hijriDate)}
-          </Text>
-          <Text style={[styles.hijriArabic, { color: theme.textSecondary }]}>
-            {hijriDate.day} {hijriDate.monthNameAr} {hijriDate.year} هـ
-          </Text>
-        </View>
-
         <TouchableOpacity
-          style={[styles.radioCard, { backgroundColor: isDark ? '#0D1C22' : '#E6FAFB' }]}
+          style={[styles.radioCard, { backgroundColor: theme.surface }]}
           onPress={() => router.push('/radio' as any)}
           activeOpacity={0.7}
           testID="quick-radio"
         >
-          <View style={styles.radioIconWrap}>
-            <Radio size={22} color="#fff" />
+          <View style={[styles.radioIconWrap, { backgroundColor: isDark ? 'rgba(107,158,145,0.15)' : 'rgba(107,158,145,0.1)' }]}>
+            <Radio size={18} color={Colors.primary} strokeWidth={1.8} />
           </View>
           <View style={styles.radioTextWrap}>
             <Text style={[styles.radioTitle, { color: theme.text }]}>Live Quran Radio</Text>
-            <Text style={[styles.radioSub, { color: theme.textSecondary }]}>Listen to live recitation</Text>
+            <Text style={[styles.radioSub, { color: theme.textTertiary }]}>Listen to live recitation</Text>
           </View>
-          <ChevronRight size={18} color={theme.textTertiary} />
+          <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
         </TouchableOpacity>
 
         <View style={styles.quickActions}>
@@ -216,9 +216,9 @@ export default function HomeScreen() {
             activeOpacity={0.7}
             testID="quick-qibla"
           >
-            <Compass size={28} color={Colors.primary} />
+            <Compass size={22} color={Colors.primary} strokeWidth={1.8} />
             <Text style={[styles.actionLabel, { color: theme.text }]}>Qibla</Text>
-            <ChevronRight size={16} color={theme.textTertiary} />
+            <ChevronRight size={14} color={theme.textTertiary} strokeWidth={1.5} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -227,52 +227,48 @@ export default function HomeScreen() {
             activeOpacity={0.7}
             testID="quick-dhikr"
           >
-            <Hand size={28} color={Colors.gold} />
+            <Hand size={22} color={Colors.gold} strokeWidth={1.8} />
             <Text style={[styles.actionLabel, { color: theme.text }]}>Dhikr</Text>
-            <ChevronRight size={16} color={theme.textTertiary} />
+            <ChevronRight size={14} color={theme.textTertiary} strokeWidth={1.5} />
           </TouchableOpacity>
         </View>
 
         <PremiumGate locked={!settings.isPremium}>
           <TouchableOpacity
-            style={[styles.card, { backgroundColor: theme.surface }]}
+            style={[styles.card, { backgroundColor: theme.surface, paddingVertical: 18 }]}
             onPress={() => router.push('/quran' as any)}
             activeOpacity={0.7}
           >
-            <View style={styles.cardHeader}>
-              <BookOpen size={18} color={Colors.primary} />
-              <Text style={[styles.cardTitle, { color: theme.text }]}>Continue Reading</Text>
+            <View style={styles.continueRow}>
+              <BookOpen size={18} color={Colors.primary} strokeWidth={1.8} />
+              <View style={styles.continueText}>
+                <Text style={[styles.continueTitle, { color: theme.text }]}>Continue Reading</Text>
+                <Text style={[styles.continueSub, { color: theme.textTertiary }]}>
+                  Pick up where you left off
+                </Text>
+              </View>
+              <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
             </View>
-            <Text style={[styles.resumeText, { color: theme.textSecondary }]}>
-              Pick up where you left off in the Quran
-            </Text>
           </TouchableOpacity>
         </PremiumGate>
 
         {!settings.isPremium && (
           <TouchableOpacity
-            style={styles.premiumBanner}
+            style={[styles.premiumBanner, { backgroundColor: isDark ? 'rgba(196,162,101,0.08)' : 'rgba(196,162,101,0.06)' }]}
             onPress={() => router.push('/paywall' as any)}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
-            <LinearGradient
-              colors={[Colors.gold, '#E89A10']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.premiumGradient}
-            >
-              <Crown size={22} color="#fff" />
-              <View style={styles.premiumBannerText}>
-                <Text style={styles.premiumTitle}>Unlock Lifetime</Text>
-                <Text style={styles.premiumSubtitle}>Full access. One-time purchase.</Text>
-              </View>
-              <ChevronRight size={20} color="#fff" />
-            </LinearGradient>
+            <Crown size={18} color={Colors.gold} strokeWidth={1.8} />
+            <View style={styles.premiumBannerText}>
+              <Text style={[styles.premiumTitle, { color: theme.text }]}>Unlock Premium</Text>
+              <Text style={[styles.premiumSubtitle, { color: theme.textSecondary }]}>Ad-free experience & more</Text>
+            </View>
+            <ChevronRight size={16} color={Colors.gold} strokeWidth={1.5} />
           </TouchableOpacity>
         )}
 
         <View style={{ height: 24 }} />
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -290,237 +286,195 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scroll: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 20,
-    paddingTop: 8,
-  },
-  greeting: {
-    fontFamily: fontFamily.system,
-    fontSize: 15,
-    fontWeight: fw.regular,
-    letterSpacing: -0.24,
-    marginBottom: 2,
-  },
-  title: {
-    fontFamily: fontFamily.system,
-    fontSize: 34,
-    fontWeight: fw.bold,
-    letterSpacing: 0.37,
-    lineHeight: 41,
-  },
-  dateText: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.regular,
-    letterSpacing: -0.08,
-    marginTop: 4,
-  },
-  nextPrayerCard: {
-    borderRadius: 20,
-    padding: 22,
-    marginBottom: 16,
-  },
-  nextPrayerTop: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  nextPrayerInfo: {
-    flex: 1,
-  },
-  nextPrayerLabel: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: fw.medium,
-    letterSpacing: -0.08,
-  },
-  nextPrayerName: {
-    fontFamily: fontFamily.system,
-    fontSize: 28,
-    fontWeight: fw.bold,
-    color: '#fff',
-    letterSpacing: 0.36,
-    marginTop: 4,
-  },
-  nextPrayerTime: {
-    fontFamily: fontFamily.system,
-    fontSize: 17,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: fw.semibold,
-    letterSpacing: -0.41,
-    marginTop: 4,
   },
   locationRow: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    marginTop: 8,
+    gap: 5,
+    marginBottom: 8,
   },
   locationText: {
     fontFamily: fontFamily.system,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: fw.regular,
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: -0.08,
+    letterSpacing: 0.2,
   },
-  countdownInner: {
-    flexDirection: 'row' as const,
-    alignItems: 'baseline',
+  heroSection: {
+    alignItems: 'center',
+    paddingVertical: 32,
   },
-  countdownValue: {
-    fontFamily: fontFamily.system,
-    fontSize: 22,
-    fontWeight: fw.bold,
-    color: '#fff',
-    letterSpacing: 0.35,
-  },
-  countdownSec: {
+  heroLabel: {
     fontFamily: fontFamily.system,
     fontSize: 13,
-    fontWeight: fw.semibold,
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: -0.08,
+    fontWeight: fw.medium,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase' as const,
+    marginBottom: 8,
   },
-  card: {
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+  heroName: {
+    fontFamily: fontFamily.system,
+    fontSize: 42,
+    fontWeight: fw.bold,
+    letterSpacing: -0.5,
+    lineHeight: 48,
   },
-  cardHeader: {
+  heroTime: {
+    fontFamily: fontFamily.system,
+    fontSize: 20,
+    fontWeight: fw.medium,
+    letterSpacing: -0.3,
+    marginTop: 6,
+  },
+  countdownRow: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 14,
+    gap: 10,
+    marginTop: 20,
   },
-  cardTitle: {
+  countdownMini: {
+    fontFamily: fontFamily.mono,
+    fontSize: 11,
+    fontWeight: fw.medium,
+  },
+  countdownLabel: {
     fontFamily: fontFamily.system,
-    fontSize: 17,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.41,
+    fontSize: 13,
+    fontWeight: fw.regular,
+  },
+  dateRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 16,
+    marginBottom: 24,
+  },
+  dateGregorian: {
+    fontFamily: fontFamily.system,
+    fontSize: 13,
+    fontWeight: fw.regular,
+  },
+  dateHijri: {
+    fontFamily: fontFamily.system,
+    fontSize: 13,
+    fontWeight: fw.regular,
+  },
+  card: {
+    borderRadius: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    marginBottom: 16,
   },
   prayerRow: {
     flexDirection: 'row' as const,
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  prayerRowActive: {
+    borderRadius: 10,
   },
   prayerRowLeft: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   prayerRowName: {
     fontFamily: fontFamily.system,
     fontSize: 15,
     fontWeight: fw.regular,
-    letterSpacing: -0.24,
+    letterSpacing: -0.2,
   },
   prayerRowTime: {
     fontFamily: fontFamily.system,
     fontSize: 15,
     fontWeight: fw.regular,
-    letterSpacing: -0.24,
+    letterSpacing: -0.2,
   },
-  hijriMain: {
-    fontFamily: fontFamily.system,
-    fontSize: 22,
-    fontWeight: fw.bold,
-    letterSpacing: 0.35,
-  },
-  hijriArabic: {
-    fontFamily: fontFamily.system,
-    fontSize: 17,
-    marginTop: 4,
-    fontWeight: fw.regular,
-    letterSpacing: -0.41,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 14,
   },
   quickActions: {
     flexDirection: 'row' as const,
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   actionCard: {
     flex: 1,
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 14,
+    padding: 16,
     flexDirection: 'row' as const,
     alignItems: 'center',
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
   actionLabel: {
     fontFamily: fontFamily.system,
     flex: 1,
-    fontSize: 16,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.32,
-  },
-  resumeText: {
-    fontFamily: fontFamily.system,
     fontSize: 15,
-    fontWeight: fw.regular,
-    letterSpacing: -0.24,
+    fontWeight: fw.medium,
+    letterSpacing: -0.2,
   },
-  premiumBanner: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  premiumGradient: {
+  continueRow: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    padding: 18,
     gap: 12,
+    paddingHorizontal: 14,
+  },
+  continueText: {
+    flex: 1,
+  },
+  continueTitle: {
+    fontFamily: fontFamily.system,
+    fontSize: 15,
+    fontWeight: fw.medium,
+    letterSpacing: -0.2,
+  },
+  continueSub: {
+    fontFamily: fontFamily.system,
+    fontSize: 12,
+    fontWeight: fw.regular,
+    marginTop: 2,
+  },
+  premiumBanner: {
+    borderRadius: 14,
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+    marginBottom: 12,
   },
   premiumBannerText: {
     flex: 1,
   },
   premiumTitle: {
     fontFamily: fontFamily.system,
-    fontSize: 17,
-    fontWeight: fw.semibold,
-    color: '#fff',
-    letterSpacing: -0.41,
+    fontSize: 15,
+    fontWeight: fw.medium,
+    letterSpacing: -0.2,
   },
   premiumSubtitle: {
     fontFamily: fontFamily.system,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: fw.regular,
-    color: 'rgba(255,255,255,0.8)',
-    letterSpacing: -0.08,
     marginTop: 2,
   },
   radioCard: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
-    marginBottom: 12,
-    gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    marginBottom: 16,
+    gap: 12,
   },
   radioIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -529,15 +483,14 @@ const styles = StyleSheet.create({
   },
   radioTitle: {
     fontFamily: fontFamily.system,
-    fontSize: 16,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.32,
+    fontSize: 15,
+    fontWeight: fw.medium,
+    letterSpacing: -0.2,
   },
   radioSub: {
     fontFamily: fontFamily.system,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: fw.regular,
-    letterSpacing: -0.08,
     marginTop: 2,
   },
 });

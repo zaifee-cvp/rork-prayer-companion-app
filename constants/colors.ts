@@ -1,9 +1,9 @@
-const primary = '#00D4E6';
-const primaryLight = '#33ECFF';
-const primaryDark = '#00A3B8';
-const gold = '#FFB020';
-const goldLight = '#FFD580';
-const danger = '#FF4757';
+const primary = '#6B9E91';
+const primaryLight = '#7BAFA2';
+const primaryDark = '#5A8B7E';
+const gold = '#C4A265';
+const goldLight = '#D4B880';
+const danger = '#D4574E';
 
 export default {
   primary,
@@ -13,29 +13,29 @@ export default {
   goldLight,
   danger,
   light: {
-    background: '#F0F4F5',
+    background: '#F7F6F3',
     surface: '#FFFFFF',
-    surfaceSecondary: '#E4EAED',
-    text: '#0A1015',
-    textSecondary: '#4A5C68',
-    textTertiary: '#7E929E',
-    border: '#CDD6DB',
+    surfaceSecondary: '#EFEEE9',
+    text: '#1A1A1C',
+    textSecondary: '#6B6B6E',
+    textTertiary: '#9A9A9D',
+    border: '#E3E2DD',
     tint: primary,
     tabBar: '#FFFFFF',
-    tabBarInactive: '#7E929E',
-    cardShadow: 'rgba(0,0,0,0.06)',
+    tabBarInactive: '#9A9A9D',
+    cardShadow: 'rgba(0,0,0,0.04)',
   },
   dark: {
-    background: '#060B0E',
-    surface: '#0D1418',
-    surfaceSecondary: '#141C22',
-    text: '#E8F0F4',
-    textSecondary: '#7A8E9A',
-    textTertiary: '#4A5D6A',
-    border: '#1A2830',
+    background: '#1A1A1C',
+    surface: '#2A2A2C',
+    surfaceSecondary: '#333335',
+    text: '#F0EFED',
+    textSecondary: '#8E8E91',
+    textTertiary: '#5A5A5D',
+    border: '#3A3A3C',
     tint: primaryLight,
-    tabBar: '#0A1015',
-    tabBarInactive: '#4A5D6A',
-    cardShadow: 'rgba(0,0,0,0.4)',
+    tabBar: '#1A1A1C',
+    tabBarInactive: '#5A5A5D',
+    cardShadow: 'rgba(0,0,0,0.3)',
   },
 };

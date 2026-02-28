@@ -12,7 +12,6 @@ import { Audio } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { ChevronLeft, Radio, Play, Pause, AlertCircle, Volume2 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
@@ -33,11 +32,12 @@ export default function RadioScreen() {
   const [radioState, setRadioState] = useState<RadioState>('idle');
   const soundRef = useRef<Audio.Sound | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const isMountedRef = useRef(true);
 
   useEffect(() => {
     isMountedRef.current = true;
+    Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
 
     if (Platform.OS !== 'web') {
       Audio.setAudioModeAsync({
@@ -59,45 +59,16 @@ export default function RadioScreen() {
     if (radioState === 'playing') {
       const pulse = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.08,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
+          Animated.timing(pulseAnim, { toValue: 1.06, duration: 1500, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
         ])
       );
       pulse.start();
-
-      const glow = Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 1800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 1800,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      glow.start();
-
-      return () => {
-        pulse.stop();
-        glow.stop();
-      };
+      return () => { pulse.stop(); };
     } else {
       pulseAnim.setValue(1);
-      glowAnim.setValue(0);
     }
-  }, [radioState, pulseAnim, glowAnim]);
+  }, [radioState, pulseAnim]);
 
   const handlePlay = useCallback(async () => {
     if (radioState === 'loading') return;
@@ -108,9 +79,7 @@ export default function RadioScreen() {
         try {
           await soundRef.current.stopAsync();
           await soundRef.current.unloadAsync();
-        } catch (e) {
-          console.log('[Radio] Stop error:', e);
-        }
+        } catch (e) { console.log('[Radio] Stop error:', e); }
         soundRef.current = null;
       }
       if (isMountedRef.current) setRadioState('idle');
@@ -126,11 +95,7 @@ export default function RadioScreen() {
         { shouldPlay: true, isLooping: false },
       );
 
-      if (!isMountedRef.current) {
-        await sound.unloadAsync();
-        return;
-      }
-
+      if (!isMountedRef.current) { await sound.unloadAsync(); return; }
       soundRef.current = sound;
 
       sound.setOnPlaybackStatusUpdate((status) => {
@@ -159,72 +124,49 @@ export default function RadioScreen() {
     setRadioState('idle');
   }, []);
 
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
-  });
-
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <LinearGradient
-        colors={isDark ? ['#0A1820', '#060B0E'] : ['#E8F6F8', '#F0F4F5']}
-        style={StyleSheet.absoluteFill}
-      />
-
       <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
-          <ChevronLeft size={24} color={Colors.primary} />
+          <ChevronLeft size={22} color={theme.text} strokeWidth={1.8} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Live Quran Radio</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Live Radio</Text>
         <View style={styles.headerRight} />
       </View>
 
-      <View style={styles.content}>
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         <View style={styles.playerSection}>
-          {radioState === 'playing' && (
-            <Animated.View
-              style={[
-                styles.glowRing,
-                {
-                  opacity: glowOpacity,
-                  backgroundColor: isDark ? 'rgba(0,212,230,0.06)' : 'rgba(0,212,230,0.08)',
-                },
-              ]}
-            />
-          )}
-
           <Animated.View
             style={[
               styles.playerCircle,
               {
                 transform: [{ scale: pulseAnim }],
+                backgroundColor: radioState === 'playing'
+                  ? Colors.primary
+                  : radioState === 'error'
+                  ? Colors.danger
+                  : isDark ? '#2A2A2C' : '#FFFFFF',
               },
             ]}
           >
-            <LinearGradient
-              colors={
-                radioState === 'playing'
-                  ? ['#00D4E6', '#009DAE']
-                  : radioState === 'error'
-                  ? [Colors.danger, '#CC3844']
-                  : isDark
-                  ? ['#1A2830', '#0D1418']
-                  : ['#FFFFFF', '#E8F0F4']
-              }
-              style={styles.playerCircleInner}
+            <TouchableOpacity
+              onPress={radioState === 'error' ? handleRetry : handlePlay}
+              activeOpacity={0.8}
+              disabled={radioState === 'loading'}
+              style={styles.playerTouchable}
             >
               {radioState === 'loading' ? (
-                <ActivityIndicator size="large" color="#fff" />
+                <ActivityIndicator size="large" color={isDark ? '#fff' : Colors.primary} />
               ) : radioState === 'error' ? (
-                <AlertCircle size={48} color="#fff" />
+                <AlertCircle size={44} color="#fff" strokeWidth={1.5} />
               ) : radioState === 'playing' ? (
-                <Pause size={48} color="#fff" strokeWidth={2.5} />
+                <Pause size={44} color="#fff" strokeWidth={2} />
               ) : (
-                <Play size={48} color={isDark ? Colors.primary : Colors.primaryDark} strokeWidth={2.5} style={{ marginLeft: 4 }} />
+                <Play size={44} color={isDark ? Colors.primary : Colors.primaryDark} strokeWidth={2} style={{ marginLeft: 4 }} />
               )}
-            </LinearGradient>
+            </TouchableOpacity>
           </Animated.View>
 
           {radioState === 'playing' && (
@@ -236,7 +178,7 @@ export default function RadioScreen() {
         </View>
 
         <View style={styles.infoSection}>
-          <Radio size={20} color={Colors.primary} />
+          <Radio size={18} color={Colors.primary} strokeWidth={1.8} />
           <Text style={[styles.stationName, { color: theme.text }]}>
             Quran Radio — Tarateel
           </Text>
@@ -250,16 +192,18 @@ export default function RadioScreen() {
             <Text style={[styles.errorText, { color: Colors.danger }]}>
               Stream unavailable, please try again
             </Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={handleRetry} activeOpacity={0.7}>
-              <Text style={styles.retryText}>Try Again</Text>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: Colors.primary }]} onPress={handleRetry} activeOpacity={0.7}>
+              <Text style={styles.actionBtnText}>Try Again</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity
             style={[
-              styles.mainBtn,
+              styles.actionBtn,
               {
-                backgroundColor: radioState === 'playing' ? 'rgba(255,71,87,0.1)' : Colors.primary,
+                backgroundColor: radioState === 'playing'
+                  ? isDark ? 'rgba(212,87,78,0.1)' : 'rgba(212,87,78,0.08)'
+                  : Colors.primary,
               },
             ]}
             onPress={handlePlay}
@@ -270,22 +214,22 @@ export default function RadioScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : radioState === 'playing' ? (
               <>
-                <Volume2 size={18} color={Colors.danger} />
-                <Text style={[styles.mainBtnText, { color: Colors.danger }]}>Stop Listening</Text>
+                <Volume2 size={16} color={Colors.danger} strokeWidth={1.8} />
+                <Text style={[styles.actionBtnText, { color: Colors.danger }]}>Stop Listening</Text>
               </>
             ) : (
               <>
-                <Play size={18} color="#fff" />
-                <Text style={[styles.mainBtnText, { color: '#fff' }]}>Start Listening</Text>
+                <Play size={16} color="#fff" strokeWidth={2} />
+                <Text style={styles.actionBtnText}>Start Listening</Text>
               </>
             )}
           </TouchableOpacity>
         )}
-      </View>
+      </Animated.View>
 
       <View style={[styles.disclaimer, { paddingBottom: insets.bottom + 16 }]}>
         <Text style={[styles.disclaimerText, { color: theme.textTertiary }]}>
-          This is a live public broadcast stream. All rights belong to the original broadcaster. No audio is downloaded or cached.
+          This is a live public broadcast stream. All rights belong to the original broadcaster.
         </Text>
       </View>
     </View>
@@ -293,149 +237,43 @@ export default function RadioScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-  },
+  root: { flex: 1 },
+  header: { flexDirection: 'row' as const, alignItems: 'center', paddingBottom: 12, paddingHorizontal: 16 },
   backBtn: { width: 40 },
-  headerTitle: {
-    fontFamily: fontFamily.system,
-    flex: 1,
-    textAlign: 'center' as const,
-    fontSize: 17,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.41,
-  },
+  headerTitle: { fontFamily: fontFamily.system, flex: 1, textAlign: 'center' as const, fontSize: 16, fontWeight: fw.medium },
   headerRight: { width: 40 },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  playerSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-    width: 200,
-    height: 200,
-  },
-  glowRing: {
-    position: 'absolute' as const,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-  },
+  content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  playerSection: { alignItems: 'center', justifyContent: 'center', marginBottom: 40, width: 200, height: 200 },
   playerCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 12,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  playerCircleInner: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  liveIndicator: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,71,87,0.12)',
-  },
-  liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: Colors.danger,
-  },
-  liveText: {
-    fontFamily: fontFamily.system,
-    fontSize: 11,
-    fontWeight: fw.bold,
-    color: Colors.danger,
-    letterSpacing: 1.2,
-  },
-  infoSection: {
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 32,
-  },
-  stationName: {
-    fontFamily: fontFamily.system,
-    fontSize: 22,
-    fontWeight: fw.bold,
-    letterSpacing: 0.35,
-    textAlign: 'center' as const,
-  },
-  stationDesc: {
-    fontFamily: fontFamily.system,
-    fontSize: 14,
-    fontWeight: fw.regular,
-    letterSpacing: -0.15,
-    textAlign: 'center' as const,
-  },
-  errorSection: {
-    alignItems: 'center',
-    gap: 16,
-  },
-  errorText: {
-    fontFamily: fontFamily.system,
-    fontSize: 15,
-    fontWeight: fw.medium,
-    textAlign: 'center' as const,
-  },
-  retryBtn: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 22,
-  },
-  retryText: {
-    fontFamily: fontFamily.system,
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: fw.semibold,
-  },
-  mainBtn: {
+  playerTouchable: { width: 140, height: 140, borderRadius: 70, alignItems: 'center', justifyContent: 'center' },
+  liveIndicator: { flexDirection: 'row' as const, alignItems: 'center', gap: 6, marginTop: 16, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, backgroundColor: 'rgba(212,87,78,0.1)' },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.danger },
+  liveText: { fontFamily: fontFamily.system, fontSize: 10, fontWeight: fw.bold, color: Colors.danger, letterSpacing: 1.2 },
+  infoSection: { alignItems: 'center', gap: 8, marginBottom: 32 },
+  stationName: { fontFamily: fontFamily.system, fontSize: 20, fontWeight: fw.semibold, letterSpacing: -0.3, textAlign: 'center' as const },
+  stationDesc: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.regular, textAlign: 'center' as const },
+  errorSection: { alignItems: 'center', gap: 16 },
+  errorText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.regular, textAlign: 'center' as const },
+  actionBtn: {
     flexDirection: 'row' as const,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
     paddingHorizontal: 32,
-    paddingVertical: 15,
-    borderRadius: 26,
+    paddingVertical: 16,
+    borderRadius: 14,
     minWidth: 200,
   },
-  mainBtnText: {
-    fontFamily: fontFamily.system,
-    fontSize: 16,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.32,
-  },
-  disclaimer: {
-    paddingHorizontal: 32,
-  },
-  disclaimerText: {
-    fontFamily: fontFamily.system,
-    fontSize: 11,
-    fontWeight: fw.regular,
-    textAlign: 'center' as const,
-    lineHeight: 16,
-  },
+  actionBtnText: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium, color: '#fff' },
+  disclaimer: { paddingHorizontal: 32 },
+  disclaimerText: { fontFamily: fontFamily.system, fontSize: 11, fontWeight: fw.regular, textAlign: 'center' as const, lineHeight: 16 },
 });

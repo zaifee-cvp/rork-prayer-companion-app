@@ -43,21 +43,21 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative' as const,
     overflow: 'hidden',
-    borderRadius: 16,
+    borderRadius: 14,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 14,
   },
   button: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    backgroundColor: '#00D4E6',
+    backgroundColor: '#6B9E91',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 24,
+    borderRadius: 14,
     gap: 8,
   },
   buttonText: {

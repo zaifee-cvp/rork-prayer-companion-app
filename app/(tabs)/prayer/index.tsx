@@ -31,21 +31,21 @@ import {
 } from '@/utils/prayer-times';
 
 const PRAYER_ICONS_MAP: Record<string, (color: string) => React.ReactNode> = {
-  fajr: (c) => <Sunrise size={20} color={c} />,
-  sunrise: (c) => <Sun size={20} color={c} />,
-  dhuhr: (c) => <CloudSun size={20} color={c} />,
-  asr: (c) => <Sun size={20} color={c} />,
-  maghrib: (c) => <Sunset size={20} color={c} />,
-  isha: (c) => <Moon size={20} color={c} />,
+  fajr: (c) => <Sunrise size={18} color={c} strokeWidth={1.8} />,
+  sunrise: (c) => <Sun size={18} color={c} strokeWidth={1.8} />,
+  dhuhr: (c) => <CloudSun size={18} color={c} strokeWidth={1.8} />,
+  asr: (c) => <Sun size={18} color={c} strokeWidth={1.8} />,
+  maghrib: (c) => <Sunset size={18} color={c} strokeWidth={1.8} />,
+  isha: (c) => <Moon size={18} color={c} strokeWidth={1.8} />,
 };
 
 const PRAYER_COLORS: Record<string, string> = {
-  fajr: '#33ECFF',
-  sunrise: '#FFB020',
-  dhuhr: '#FF8C42',
-  asr: '#FFD166',
-  maghrib: '#FF6B6B',
-  isha: '#7A8EFF',
+  fajr: '#7BAFA2',
+  sunrise: '#C4A265',
+  dhuhr: '#C49565',
+  asr: '#C4A265',
+  maghrib: '#C47B65',
+  isha: '#8B7BAF',
 };
 
 export default function PrayerScreen() {
@@ -94,7 +94,7 @@ export default function PrayerScreen() {
   const renderMonthlyRow = useCallback(({ item }: { item: typeof monthlyData.rows[0] }) => {
     const isToday = item.date.toDateString() === now.toDateString();
     return (
-      <View style={[styles.monthRow, isToday && { backgroundColor: isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.05)' }]}>
+      <View style={[styles.monthRow, isToday && { backgroundColor: isDark ? 'rgba(107,158,145,0.08)' : 'rgba(107,158,145,0.05)' }]}>
         <Text style={[styles.monthDay, { color: isToday ? Colors.primary : theme.text }]}>{item.day}</Text>
         {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as PrayerName[]).map((p) => (
           <Text key={p} style={[styles.monthTime, { color: theme.textSecondary }]}>
@@ -108,23 +108,23 @@ export default function PrayerScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 12 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.title, { color: theme.text }]}>Prayer Times</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+        <Text style={[styles.subtitle, { color: theme.textTertiary }]}>
           {city.name}, {city.country}
         </Text>
 
         <View style={[styles.heroCard, { backgroundColor: theme.surface }]}>
           <View style={styles.heroRow}>
             <View style={styles.heroInfo}>
-              <Text style={[styles.heroLabel, { color: theme.textSecondary }]}>Next Prayer</Text>
-              <Text style={[styles.heroName, { color: Colors.primary }]}>
+              <Text style={[styles.heroLabel, { color: theme.textTertiary }]}>Next Prayer</Text>
+              <Text style={[styles.heroName, { color: theme.text }]}>
                 {nextPrayer ? PRAYER_DISPLAY_NAMES[nextPrayer.name] : 'Done for today'}
               </Text>
               {timeUntil && (
-                <Text style={[styles.heroCountdown, { color: theme.text }]}>
+                <Text style={[styles.heroCountdown, { color: theme.textSecondary }]}>
                   {timeUntil.hours > 0 ? `${timeUntil.hours}h ` : ''}
                   {timeUntil.minutes}m {timeUntil.seconds}s
                 </Text>
@@ -132,12 +132,12 @@ export default function PrayerScreen() {
             </View>
             <CountdownRing
               progress={progress}
-              size={90}
-              strokeWidth={5}
+              size={80}
+              strokeWidth={4}
               color={nextPrayer ? PRAYER_COLORS[nextPrayer.name] || Colors.primary : Colors.primary}
-              bgColor={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'}
+              bgColor={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}
             >
-              <Text style={[styles.heroTime, { color: theme.text }]}>
+              <Text style={[styles.heroTime, { color: theme.textSecondary }]}>
                 {nextPrayer ? formatTime(nextPrayer.time, settings.use24hFormat) : '—'}
               </Text>
             </CountdownRing>
@@ -146,38 +146,41 @@ export default function PrayerScreen() {
 
         <View style={[styles.timesCard, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Today</Text>
-          {prayerList.map((name) => {
+          {prayerList.map((name, index) => {
             const isNext = nextPrayer?.name === name;
             const isPast = prayerTimes[name] < now && !isNext;
             const iconColor = PRAYER_COLORS[name];
             return (
-              <View
-                key={name}
-                style={[
-                  styles.prayerRow,
-                  isNext && styles.prayerRowActive,
-                  isNext && { backgroundColor: isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.05)' },
-                ]}
-              >
-                <View style={styles.prayerLeft}>
-                  <View style={[styles.iconCircle, { backgroundColor: `${iconColor}15` }]}>
-                    {PRAYER_ICONS_MAP[name](iconColor)}
+              <View key={name}>
+                <View
+                  style={[
+                    styles.prayerRow,
+                    isNext && { backgroundColor: isDark ? 'rgba(107,158,145,0.08)' : 'rgba(107,158,145,0.05)' },
+                  ]}
+                >
+                  <View style={styles.prayerLeft}>
+                    <View style={[styles.iconCircle, { backgroundColor: `${iconColor}12` }]}>
+                      {PRAYER_ICONS_MAP[name](iconColor)}
+                    </View>
+                    <Text style={[
+                      styles.prayerName,
+                      { color: isPast ? theme.textTertiary : theme.text },
+                      isNext && { fontWeight: '600' as const },
+                    ]}>
+                      {PRAYER_DISPLAY_NAMES[name]}
+                    </Text>
                   </View>
                   <Text style={[
-                    styles.prayerName,
-                    { color: isPast ? theme.textTertiary : (isNext ? Colors.primary : theme.text) },
-                    isNext && { fontWeight: '700' as const },
+                    styles.prayerTime,
+                    { color: isPast ? theme.textTertiary : (isNext ? Colors.primary : theme.textSecondary) },
+                    isNext && { fontWeight: '600' as const },
                   ]}>
-                    {PRAYER_DISPLAY_NAMES[name]}
+                    {formatTime(prayerTimes[name], settings.use24hFormat)}
                   </Text>
                 </View>
-                <Text style={[
-                  styles.prayerTime,
-                  { color: isPast ? theme.textTertiary : (isNext ? Colors.primary : theme.textSecondary) },
-                  isNext && { fontWeight: '700' as const },
-                ]}>
-                  {formatTime(prayerTimes[name], settings.use24hFormat)}
-                </Text>
+                {index < prayerList.length - 1 && !isNext && nextPrayer?.name !== prayerList[index + 1] && (
+                  <View style={[styles.rowDivider, { backgroundColor: theme.border }]} />
+                )}
               </View>
             );
           })}
@@ -189,16 +192,16 @@ export default function PrayerScreen() {
               <Text style={[styles.sectionTitle, { color: theme.text }]}>Monthly Timetable</Text>
               <View style={styles.monthNav}>
                 <TouchableOpacity onPress={() => setMonthOffset((p) => p - 1)} hitSlop={12}>
-                  <ChevronLeft size={20} color={Colors.primary} />
+                  <ChevronLeft size={18} color={Colors.primary} strokeWidth={1.8} />
                 </TouchableOpacity>
                 <Text style={[styles.monthLabel, { color: theme.text }]}>{monthName}</Text>
                 <TouchableOpacity onPress={() => setMonthOffset((p) => p + 1)} hitSlop={12}>
-                  <ChevronRight size={20} color={Colors.primary} />
+                  <ChevronRight size={18} color={Colors.primary} strokeWidth={1.8} />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <View style={styles.monthHeaderRow}>
+            <View style={[styles.monthHeaderRow, { borderBottomColor: theme.border }]}>
               <Text style={[styles.monthHeaderCell, styles.dayCell, { color: theme.textTertiary }]}>Day</Text>
               {(['Fajr', 'Dhuhr', 'Asr', 'Magh', 'Isha']).map((n) => (
                 <Text key={n} style={[styles.monthHeaderCell, { color: theme.textTertiary }]}>{n}</Text>
@@ -221,72 +224,63 @@ export default function PrayerScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
-  title: { fontFamily: fontFamily.system, fontSize: 34, fontWeight: fw.bold, letterSpacing: 0.37, lineHeight: 41, paddingTop: 8 },
-  subtitle: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, letterSpacing: -0.08, marginTop: 4, marginBottom: 20 },
+  scroll: { paddingHorizontal: 24, paddingBottom: 40 },
+  title: { fontFamily: fontFamily.system, fontSize: 28, fontWeight: fw.bold, letterSpacing: -0.3, lineHeight: 34, paddingTop: 8 },
+  subtitle: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, marginTop: 4, marginBottom: 24 },
   heroCard: {
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
   heroRow: { flexDirection: 'row' as const, justifyContent: 'space-between', alignItems: 'center' },
   heroInfo: { flex: 1 },
-  heroLabel: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.medium, letterSpacing: -0.08 },
-  heroName: { fontFamily: fontFamily.system, fontSize: 26, fontWeight: fw.bold, letterSpacing: 0.36, marginTop: 4 },
-  heroCountdown: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold, letterSpacing: -0.32, marginTop: 4 },
-  heroTime: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.semibold, letterSpacing: -0.08 },
+  heroLabel: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium, letterSpacing: 0.5, textTransform: 'uppercase' as const },
+  heroName: { fontFamily: fontFamily.system, fontSize: 24, fontWeight: fw.bold, letterSpacing: -0.3, marginTop: 4 },
+  heroCountdown: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium, marginTop: 4 },
+  heroTime: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium },
   timesCard: {
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  sectionTitle: { fontFamily: fontFamily.system, fontSize: 17, fontWeight: fw.semibold, letterSpacing: -0.41, marginBottom: 12 },
+  sectionTitle: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold, letterSpacing: -0.2, marginBottom: 8, paddingHorizontal: 14, paddingTop: 10 },
   prayerRow: {
     flexDirection: 'row' as const,
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 10,
   },
-  prayerRowActive: {},
   prayerLeft: { flexDirection: 'row' as const, alignItems: 'center', gap: 12 },
-  iconCircle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  prayerName: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.regular, letterSpacing: -0.32 },
-  prayerTime: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.regular, letterSpacing: -0.32 },
+  iconCircle: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  prayerName: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.regular, letterSpacing: -0.2 },
+  prayerTime: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.regular, letterSpacing: -0.2 },
+  rowDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
   monthlySection: {
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 14,
+    padding: 16,
     marginBottom: 16,
     minHeight: 200,
   },
   monthlyHeader: { marginBottom: 12 },
   monthNav: { flexDirection: 'row' as const, alignItems: 'center', gap: 16, marginTop: 8 },
-  monthLabel: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.semibold, letterSpacing: -0.24, minWidth: 140, textAlign: 'center' as const },
+  monthLabel: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium, minWidth: 140, textAlign: 'center' as const },
   monthHeaderRow: {
     flexDirection: 'row' as const,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  monthHeaderCell: { fontFamily: fontFamily.system, flex: 1, fontSize: 11, fontWeight: fw.semibold, letterSpacing: 0.07, textAlign: 'center' as const },
+  monthHeaderCell: { fontFamily: fontFamily.system, flex: 1, fontSize: 11, fontWeight: fw.medium, letterSpacing: 0.3, textAlign: 'center' as const },
   dayCell: { flex: 0.6 },
   monthRow: {
     flexDirection: 'row' as const,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.04)',
+    borderBottomColor: 'rgba(0,0,0,0.03)',
+    borderRadius: 4,
   },
-  monthDay: { fontFamily: fontFamily.system, flex: 0.6, fontSize: 13, fontWeight: fw.semibold, letterSpacing: -0.08, textAlign: 'center' as const },
+  monthDay: { fontFamily: fontFamily.system, flex: 0.6, fontSize: 13, fontWeight: fw.medium, textAlign: 'center' as const },
   monthTime: { fontFamily: fontFamily.system, flex: 1, fontSize: 12, fontWeight: fw.regular, textAlign: 'center' as const },
 });

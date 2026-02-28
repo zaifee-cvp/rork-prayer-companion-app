@@ -102,8 +102,8 @@ export default function DhikrScreen() {
 
   const animateTap = useCallback(() => {
     Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.92, duration: 60, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, friction: 3, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 0.93, duration: 60, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
     ]).start();
   }, [scaleAnim]);
 
@@ -200,7 +200,7 @@ export default function DhikrScreen() {
     if (mode === 'tasbih') {
       if (sequenceComplete) return Colors.gold;
       if (isStepComplete) return Colors.gold;
-      const stepColors = ['#00D4E6', '#34C759', '#FF9500', '#AF52DE', '#FF3B30'];
+      const stepColors = ['#6B9E91', '#7BAF8B', '#C49565', '#8B7BAF', '#C47B65'];
       return stepColors[stepIndex] ?? Colors.primary;
     }
     return isStepComplete ? Colors.gold : Colors.primary;
@@ -211,13 +211,13 @@ export default function DhikrScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={16}>
           <View style={[styles.closeBg, { backgroundColor: theme.surfaceSecondary }]}>
-            <X size={20} color={theme.textSecondary} />
+            <X size={18} color={theme.textSecondary} strokeWidth={1.8} />
           </View>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Dhikr</Text>
         <TouchableOpacity onPress={handleReset} hitSlop={16}>
           <View style={[styles.closeBg, { backgroundColor: theme.surfaceSecondary }]}>
-            <RotateCcw size={18} color={theme.textSecondary} />
+            <RotateCcw size={16} color={theme.textSecondary} strokeWidth={1.8} />
           </View>
         </TouchableOpacity>
       </View>
@@ -228,8 +228,8 @@ export default function DhikrScreen() {
         showsVerticalScrollIndicator={false}
       >
         {settings.isPremium && dhikrStreak > 0 && (
-          <View style={styles.streakRow}>
-            <Flame size={16} color={Colors.gold} />
+          <View style={[styles.streakRow, { backgroundColor: isDark ? 'rgba(196,162,101,0.08)' : 'rgba(196,162,101,0.06)' }]}>
+            <Flame size={14} color={Colors.gold} strokeWidth={1.8} />
             <Text style={[styles.streakText, { color: Colors.gold }]}>
               {dhikrStreak} day streak
             </Text>
@@ -240,8 +240,7 @@ export default function DhikrScreen() {
           <TouchableOpacity
             style={[
               styles.modeBtn,
-              mode === 'tasbih' && { backgroundColor: Colors.primary },
-              mode !== 'tasbih' && { backgroundColor: theme.surfaceSecondary },
+              { backgroundColor: mode === 'tasbih' ? Colors.primary : theme.surfaceSecondary },
             ]}
             onPress={() => switchMode('tasbih')}
           >
@@ -252,8 +251,7 @@ export default function DhikrScreen() {
           <TouchableOpacity
             style={[
               styles.modeBtn,
-              mode === 'free' && { backgroundColor: Colors.primary },
-              mode !== 'free' && { backgroundColor: theme.surfaceSecondary },
+              { backgroundColor: mode === 'free' ? Colors.primary : theme.surfaceSecondary },
             ]}
             onPress={() => switchMode('free')}
           >
@@ -310,15 +308,15 @@ export default function DhikrScreen() {
           <Animated.View style={[styles.ringWrapper, { transform: [{ scale: scaleAnim }] }]}>
             <CountdownRing
               progress={mode === 'tasbih' ? progress : progress}
-              size={220}
-              strokeWidth={10}
+              size={200}
+              strokeWidth={8}
               color={ringColor}
-              bgColor={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}
+              bgColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
             >
               <Text style={[styles.countText, { color: isStepComplete || sequenceComplete ? Colors.gold : theme.text }]}>
                 {count}
               </Text>
-              <Text style={[styles.counterTarget, { color: theme.textSecondary }]}>
+              <Text style={[styles.counterTarget, { color: theme.textTertiary }]}>
                 / {target}
               </Text>
             </CountdownRing>
@@ -332,14 +330,14 @@ export default function DhikrScreen() {
         )}
         {mode === 'free' && (
           <Text style={[styles.tapHint, { color: theme.textTertiary }]}>
-            {isStepComplete ? 'Target reached! Tap to continue or reset.' : 'Tap anywhere on the circle to count'}
+            {isStepComplete ? 'Target reached! Tap to continue or reset.' : 'Tap the circle to count'}
           </Text>
         )}
 
         {mode === 'tasbih' && (
           <View style={[styles.stepsCard, { backgroundColor: theme.surface }]}>
-            <Text style={[styles.stepsTitle, { color: theme.textSecondary }]}>Sequence Progress</Text>
-            <View style={[styles.overallBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+            <Text style={[styles.stepsTitle, { color: theme.textTertiary }]}>Sequence Progress</Text>
+            <View style={[styles.overallBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
               <View style={[styles.overallFill, { width: `${Math.min(100, overallProgress * 100)}%`, backgroundColor: sequenceComplete ? Colors.gold : Colors.primary }]} />
             </View>
             {TASBIH_SEQUENCE.map((step, i) => {
@@ -354,9 +352,9 @@ export default function DhikrScreen() {
                     !isDone && !isCurrent && { backgroundColor: theme.surfaceSecondary },
                   ]}>
                     {isDone ? (
-                      <Check size={12} color="#fff" strokeWidth={3} />
+                      <Check size={11} color="#fff" strokeWidth={3} />
                     ) : isCurrent ? (
-                      <ChevronRight size={12} color="#fff" strokeWidth={3} />
+                      <ChevronRight size={11} color="#fff" strokeWidth={3} />
                     ) : (
                       <Text style={styles.stepDotNum}>{i + 1}</Text>
                     )}
@@ -381,7 +379,7 @@ export default function DhikrScreen() {
 
         {mode === 'free' && (
           <View style={[styles.targetRow, { backgroundColor: theme.surface }]}>
-            <Target size={18} color={Colors.primary} />
+            <Target size={16} color={Colors.primary} strokeWidth={1.8} />
             <Text style={[styles.targetLabel, { color: theme.text }]}>
               {isStepComplete ? 'Completed!' : `${target - count} remaining`}
             </Text>
@@ -391,7 +389,7 @@ export default function DhikrScreen() {
         {mode === 'tasbih' && sequenceComplete && (
           <View style={[styles.hadithCard, { backgroundColor: theme.surface }]}>
             <View style={styles.hadithHeader}>
-              <BookOpen size={18} color={Colors.gold} />
+              <BookOpen size={16} color={Colors.gold} strokeWidth={1.8} />
               <Text style={[styles.hadithHeaderText, { color: Colors.gold }]}>Hadith</Text>
             </View>
             <Text style={[styles.hadithQuote, { color: theme.text }]}>
@@ -428,245 +426,57 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
-  headerTitle: { fontFamily: fontFamily.system, fontSize: 17, fontWeight: fw.semibold, letterSpacing: -0.41 },
-  closeBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  headerTitle: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.medium },
+  closeBg: { width: 34, height: 34, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   scrollView: { flex: 1 },
-  scrollContent: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
+  scrollContent: { alignItems: 'center', paddingHorizontal: 24 },
   streakRow: {
     flexDirection: 'row' as const,
     alignItems: 'center',
     gap: 6,
-    marginBottom: 12,
-  },
-  streakText: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.semibold, letterSpacing: -0.24 },
-  modeToggle: {
-    flexDirection: 'row' as const,
-    gap: 8,
-    marginBottom: 20,
-  },
-  modeBtn: {
-    paddingHorizontal: 22,
-    paddingVertical: 9,
-    borderRadius: 20,
-  },
-  modeBtnText: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.semibold, letterSpacing: -0.24 },
-  stepInfo: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  stepArabic: {
-    fontFamily: fontFamily.system,
-    fontSize: 32,
-    fontWeight: fw.bold,
-    letterSpacing: 0,
-    textAlign: 'center' as const,
-    marginBottom: 6,
-  },
-  stepTranslit: {
-    fontFamily: fontFamily.system,
-    fontSize: 18,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.32,
-    marginBottom: 4,
-  },
-  stepMeaning: {
-    fontFamily: fontFamily.system,
-    fontSize: 14,
-    fontWeight: fw.regular,
-    fontStyle: 'italic' as const,
-    letterSpacing: -0.15,
-  },
-  presets: {
-    flexDirection: 'row' as const,
-    gap: 10,
-    marginBottom: 28,
-  },
-  presetBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  presetText: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold, letterSpacing: -0.32 },
-  tapArea: {
     marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
+  streakText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium },
+  modeToggle: { flexDirection: 'row' as const, gap: 8, marginBottom: 24 },
+  modeBtn: { paddingHorizontal: 22, paddingVertical: 9, borderRadius: 12 },
+  modeBtnText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium },
+  stepInfo: { alignItems: 'center', marginBottom: 24 },
+  stepArabic: { fontFamily: fontFamily.system, fontSize: 30, fontWeight: fw.bold, textAlign: 'center' as const, marginBottom: 6 },
+  stepTranslit: { fontFamily: fontFamily.system, fontSize: 17, fontWeight: fw.medium, marginBottom: 4 },
+  stepMeaning: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, fontStyle: 'italic' as const },
+  presets: { flexDirection: 'row' as const, gap: 10, marginBottom: 28 },
+  presetBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 },
+  presetText: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium },
+  tapArea: { marginBottom: 16 },
   ringWrapper: {},
-  countText: {
-    fontFamily: fontFamily.system,
-    fontSize: 56,
-    fontWeight: fw.bold,
-    letterSpacing: -1,
-  },
-  counterTarget: {
-    fontFamily: fontFamily.system,
-    fontSize: 17,
-    fontWeight: fw.regular,
-    letterSpacing: -0.41,
-    marginTop: -4,
-  },
-  tapHint: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.regular,
-    letterSpacing: -0.08,
-    marginBottom: 20,
-  },
-  stepsCard: {
-    width: '100%',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  stepsTitle: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase' as const,
-    marginBottom: 12,
-  },
-  overallBar: {
-    height: 4,
-    borderRadius: 2,
-    width: '100%',
-    marginBottom: 16,
-    overflow: 'hidden' as const,
-  },
-  overallFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  stepRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
-  },
-  stepRowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  stepDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepDotNum: {
-    fontFamily: fontFamily.system,
-    fontSize: 12,
-    fontWeight: fw.semibold,
-    color: '#999',
-  },
-  stepRowText: {
-    flex: 1,
-  },
-  stepRowArabic: {
-    fontFamily: fontFamily.system,
-    fontSize: 18,
-    fontWeight: fw.semibold,
-    letterSpacing: 0,
-    marginBottom: 2,
-  },
-  stepRowLabel: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.regular,
-    letterSpacing: -0.08,
-  },
-  doneLabel: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.semibold,
-  },
-  currentCount: {
-    fontFamily: fontFamily.system,
-    fontSize: 15,
-    fontWeight: fw.bold,
-    letterSpacing: -0.24,
-  },
-  targetRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 10,
-    borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    width: '100%',
-  },
-  targetLabel: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.semibold, letterSpacing: -0.32 },
-  hadithCard: {
-    width: '100%',
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  hadithHeader: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 14,
-  },
-  hadithHeaderText: {
-    fontFamily: fontFamily.system,
-    fontSize: 14,
-    fontWeight: fw.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase' as const,
-  },
-  hadithQuote: {
-    fontFamily: fontFamily.system,
-    fontSize: 17,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.41,
-    textAlign: 'center' as const,
-    marginBottom: 8,
-  },
-  hadithBody: {
-    fontFamily: fontFamily.system,
-    fontSize: 18,
-    fontWeight: fw.medium,
-    fontStyle: 'italic' as const,
-    letterSpacing: -0.32,
-    textAlign: 'center' as const,
-    lineHeight: 26,
-    marginBottom: 16,
-  },
-  hadithDivider: {
-    height: StyleSheet.hairlineWidth,
-    width: '100%',
-    marginBottom: 14,
-  },
-  hadithNarrator: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.08,
-    marginBottom: 6,
-  },
-  hadithFull: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.regular,
-    fontStyle: 'italic' as const,
-    letterSpacing: -0.08,
-    lineHeight: 19,
-    marginBottom: 8,
-  },
-  hadithSource: {
-    fontFamily: fontFamily.system,
-    fontSize: 12,
-    fontWeight: fw.regular,
-    letterSpacing: -0.08,
-  },
+  countText: { fontFamily: fontFamily.system, fontSize: 52, fontWeight: fw.bold, letterSpacing: -1 },
+  counterTarget: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.regular, marginTop: -4 },
+  tapHint: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, marginBottom: 24 },
+  stepsCard: { width: '100%', borderRadius: 14, padding: 16, marginBottom: 16 },
+  stepsTitle: { fontFamily: fontFamily.system, fontSize: 11, fontWeight: fw.medium, letterSpacing: 0.8, textTransform: 'uppercase' as const, marginBottom: 12 },
+  overallBar: { height: 3, borderRadius: 2, width: '100%', marginBottom: 16, overflow: 'hidden' as const },
+  overallFill: { height: '100%', borderRadius: 2 },
+  stepRow: { flexDirection: 'row' as const, alignItems: 'center', paddingVertical: 12, gap: 12 },
+  stepRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth },
+  stepDot: { width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center' },
+  stepDotNum: { fontFamily: fontFamily.system, fontSize: 11, fontWeight: fw.medium, color: '#999' },
+  stepRowText: { flex: 1 },
+  stepRowArabic: { fontFamily: fontFamily.system, fontSize: 17, fontWeight: fw.medium, marginBottom: 2 },
+  stepRowLabel: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular },
+  doneLabel: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium },
+  currentCount: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.bold },
+  targetRow: { flexDirection: 'row' as const, alignItems: 'center', gap: 10, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 14, width: '100%' },
+  targetLabel: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium },
+  hadithCard: { width: '100%', borderRadius: 14, padding: 20, marginTop: 16, marginBottom: 16 },
+  hadithHeader: { flexDirection: 'row' as const, alignItems: 'center', gap: 8, marginBottom: 14 },
+  hadithHeaderText: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium, letterSpacing: 0.8, textTransform: 'uppercase' as const },
+  hadithQuote: { fontFamily: fontFamily.system, fontSize: 16, fontWeight: fw.medium, textAlign: 'center' as const, marginBottom: 8 },
+  hadithBody: { fontFamily: fontFamily.system, fontSize: 17, fontWeight: fw.regular, fontStyle: 'italic' as const, textAlign: 'center' as const, lineHeight: 26, marginBottom: 16 },
+  hadithDivider: { height: StyleSheet.hairlineWidth, width: '100%', marginBottom: 14 },
+  hadithNarrator: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium, marginBottom: 6 },
+  hadithFull: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.regular, fontStyle: 'italic' as const, lineHeight: 19, marginBottom: 8 },
+  hadithSource: { fontFamily: fontFamily.system, fontSize: 11, fontWeight: fw.regular },
 });

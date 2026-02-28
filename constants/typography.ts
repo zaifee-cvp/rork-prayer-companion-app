@@ -3,14 +3,14 @@ import { Platform } from 'react-native';
 const SF_FONT_FAMILY = Platform.select({
   ios: 'System',
   android: 'Roboto',
-  web: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif',
+  web: '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
   default: 'System',
 }) as string;
 
 const SF_ROUNDED_FAMILY = Platform.select({
   ios: 'System',
   android: 'Roboto',
-  web: '-apple-system, BlinkMacSystemFont, "SF Pro Rounded", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+  web: '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
   default: 'System',
 }) as string;
 
@@ -39,9 +39,11 @@ export const fontSize = {
   title2: 22,
   title1: 28,
   largeTitle: 34,
+  hero: 48,
 } as const;
 
 export const fontWeight = {
+  light: '300' as const,
   regular: '400' as const,
   medium: '500' as const,
   semibold: '600' as const,
