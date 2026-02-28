@@ -11,7 +11,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen } from 'lucide-react-native';
+import * as Speech from 'expo-speech';
+import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen, Volume2, VolumeX } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
@@ -22,6 +23,7 @@ interface DhikrStep {
   transliteration: string;
   meaning: string;
   target: number;
+  spokenText?: string;
 }
 
 const TASBIH_SEQUENCE: DhikrStep[] = [
@@ -30,30 +32,35 @@ const TASBIH_SEQUENCE: DhikrStep[] = [
     transliteration: 'SubhanAllah',
     meaning: 'Glory be to Allah',
     target: 33,
+    spokenText: 'سُبْحَانَ اللَّه',
   },
   {
     arabic: 'الْحَمْدُ للهِ',
     transliteration: 'Alhamdulillah',
     meaning: 'All praise is due to Allah',
     target: 33,
+    spokenText: 'الْحَمْدُ للهِ',
   },
   {
     arabic: 'اللّٰهُ أَكْبَرُ',
     transliteration: 'Allahu Akbar',
     meaning: 'Allah is the Greatest',
     target: 33,
+    spokenText: 'اللّٰهُ أَكْبَرُ',
   },
   {
     arabic: 'لَا إِلٰهَ إِلَّا اللّٰهُ',
     transliteration: 'La ilaha illallah',
     meaning: 'There is no god but Allah',
     target: 1,
+    spokenText: 'لَا إِلٰهَ إِلَّا اللّٰهُ',
   },
   {
     arabic: 'لَا إِلٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
     transliteration: 'La ilaha illallahu, wahdahu la sharika lahu, lahul-mulku wa lahul-hamdu, wa Huwa \'ala kulli shai\'in Qadir',
     meaning: 'There is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things.',
     target: 1,
+    spokenText: 'لَا إِلٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
   },
 ];
 
@@ -77,6 +84,8 @@ export default function DhikrScreen() {
   const [count, setCount] = useState(0);
   const [freeTarget, setFreeTarget] = useState(33);
   const [sequenceComplete, setSequenceComplete] = useState(false);
+
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const stepTransition = useRef(new Animated.Value(1)).current;
@@ -196,6 +205,32 @@ export default function DhikrScreen() {
     animateStepTransition();
   }, [mode, animateStepTransition]);
 
+  const handlePlayVoice = useCallback((index: number) => {
+    const step = TASBIH_SEQUENCE[index];
+    if (!step?.spokenText) return;
+
+    if (playingIndex === index) {
+      Speech.stop();
+      setPlayingIndex(null);
+      return;
+    }
+
+    Speech.stop();
+    setPlayingIndex(index);
+
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    Speech.speak(step.spokenText, {
+      language: 'ar',
+      rate: 0.8,
+      onDone: () => setPlayingIndex(null),
+      onError: () => setPlayingIndex(null),
+      onStopped: () => setPlayingIndex(null),
+    });
+  }, [playingIndex]);
+
   const ringColor = useMemo(() => {
     if (mode === 'tasbih') {
       if (sequenceComplete) return Colors.gold;
@@ -266,7 +301,21 @@ export default function DhikrScreen() {
             {!sequenceComplete ? (
               <>
                 <Text style={[styles.stepArabic, { color: theme.text }]}>{currentStep.arabic}</Text>
-                <Text style={[styles.stepTranslit, { color: ringColor }]}>{currentStep.transliteration}</Text>
+                <View style={styles.translitRow}>
+                  <Text style={[styles.stepTranslit, { color: ringColor }]}>{currentStep.transliteration}</Text>
+                  <TouchableOpacity
+                    onPress={() => handlePlayVoice(stepIndex)}
+                    hitSlop={12}
+                    style={[styles.voiceBtn, { backgroundColor: playingIndex === stepIndex ? ringColor : theme.surfaceSecondary }]}
+                    testID={`dhikr-voice-${stepIndex}`}
+                  >
+                    {playingIndex === stepIndex ? (
+                      <VolumeX size={14} color="#fff" strokeWidth={2} />
+                    ) : (
+                      <Volume2 size={14} color={ringColor} strokeWidth={2} />
+                    )}
+                  </TouchableOpacity>
+                </View>
                 <Text style={[styles.stepMeaning, { color: theme.textSecondary }]}>{currentStep.meaning}</Text>
               </>
             ) : (
@@ -365,12 +414,25 @@ export default function DhikrScreen() {
                       {step.transliteration} × {step.target}
                     </Text>
                   </View>
-                  {isDone && (
-                    <Text style={[styles.doneLabel, { color: Colors.gold }]}>Done</Text>
-                  )}
-                  {isCurrent && (
-                    <Text style={[styles.currentCount, { color: ringColor }]}>{count}/{step.target}</Text>
-                  )}
+                  <View style={styles.stepRowActions}>
+                    <TouchableOpacity
+                      onPress={() => handlePlayVoice(i)}
+                      hitSlop={8}
+                      style={[styles.voiceBtnSmall, { backgroundColor: playingIndex === i ? (isCurrent ? ringColor : Colors.gold) : theme.surfaceSecondary }]}
+                    >
+                      {playingIndex === i ? (
+                        <VolumeX size={11} color="#fff" strokeWidth={2.2} />
+                      ) : (
+                        <Volume2 size={11} color={isCurrent ? ringColor : isDone ? Colors.gold : theme.textTertiary} strokeWidth={2.2} />
+                      )}
+                    </TouchableOpacity>
+                    {isDone && (
+                      <Text style={[styles.doneLabel, { color: Colors.gold }]}>Done</Text>
+                    )}
+                    {isCurrent && (
+                      <Text style={[styles.currentCount, { color: ringColor }]}>{count}/{step.target}</Text>
+                    )}
+                  </View>
                 </View>
               );
             })}
@@ -468,6 +530,10 @@ const styles = StyleSheet.create({
   stepRowLabel: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular },
   doneLabel: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium },
   currentCount: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.bold },
+  translitRow: { flexDirection: 'row' as const, alignItems: 'center', gap: 8, marginBottom: 4 },
+  voiceBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center' as const, alignItems: 'center' as const },
+  voiceBtnSmall: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center' as const, alignItems: 'center' as const },
+  stepRowActions: { flexDirection: 'row' as const, alignItems: 'center', gap: 8 },
   targetRow: { flexDirection: 'row' as const, alignItems: 'center', gap: 10, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 14, width: '100%' },
   targetLabel: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium },
   hadithCard: { width: '100%', borderRadius: 14, padding: 20, marginTop: 16, marginBottom: 16 },
