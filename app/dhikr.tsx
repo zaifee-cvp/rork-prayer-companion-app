@@ -41,7 +41,7 @@ const TASBIH_SEQUENCE: DhikrStep[] = [
     arabic: 'اللّٰهُ أَكْبَرُ',
     transliteration: 'Allahu Akbar',
     meaning: 'Allah is the Greatest',
-    target: 34,
+    target: 33,
   },
   {
     arabic: 'لَا إِلٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
@@ -269,7 +269,7 @@ export default function DhikrScreen() {
               <>
                 <Text style={[styles.stepArabic, { color: Colors.gold }]}>ما شاء الله</Text>
                 <Text style={[styles.stepTranslit, { color: Colors.gold }]}>Sequence Complete!</Text>
-                <Text style={[styles.stepMeaning, { color: theme.textSecondary }]}>100 Dhikr completed</Text>
+                <Text style={[styles.stepMeaning, { color: theme.textSecondary }]}>Dhikr completed</Text>
               </>
             )}
           </Animated.View>
