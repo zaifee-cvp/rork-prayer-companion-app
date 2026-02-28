@@ -209,45 +209,75 @@ export default function DhikrScreen() {
     const step = TASBIH_SEQUENCE[index];
     if (!step) return;
 
-    if (playingIndex === index) {
-      Speech.stop();
+    try {
+      const isSpeaking = await Speech.isSpeakingAsync();
+      console.log('Is currently speaking:', isSpeaking);
+
+      if (playingIndex === index) {
+        await Speech.stop();
+        setPlayingIndex(null);
+        return;
+      }
+
+      if (isSpeaking) {
+        await Speech.stop();
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      setPlayingIndex(index);
+
+      const transliterations: Record<number, string> = {
+        0: 'Subhan Allah',
+        1: 'Alhamdulillah',
+        2: 'Allahu Akbar',
+        3: 'La ilaha illallah',
+        4: 'La ilaha illallahu wahdahu la sharika lahu lahul mulku wa lahul hamdu wa huwa ala kulli shayin qadeer',
+      };
+
+      const arabicTexts: Record<number, string> = {
+        0: 'سبحان الله',
+        1: 'الحمد لله',
+        2: 'الله أكبر',
+        3: 'لا إله إلا الله',
+        4: 'لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير',
+      };
+
+      const useArabic = Platform.OS !== 'web';
+      const textToSpeak = useArabic
+        ? (arabicTexts[index] ?? step.arabic)
+        : (transliterations[index] ?? step.transliteration);
+      const lang = useArabic ? 'ar' : 'en';
+
+      console.log('Speaking dhikr:', step.transliteration, 'lang:', lang, 'text:', textToSpeak);
+
+      Speech.speak(textToSpeak, {
+        language: lang,
+        rate: useArabic ? 0.8 : 0.9,
+        pitch: 1.0,
+        onStart: () => {
+          console.log('Speech started for index:', index);
+        },
+        onDone: () => {
+          console.log('Speech finished for index:', index);
+          setPlayingIndex(null);
+        },
+        onError: (err) => {
+          console.log('Speech error:', err);
+          setPlayingIndex(null);
+        },
+        onStopped: () => {
+          console.log('Speech stopped for index:', index);
+          setPlayingIndex(null);
+        },
+      });
+    } catch (err) {
+      console.log('handlePlayVoice error:', err);
       setPlayingIndex(null);
-      return;
     }
-
-    Speech.stop();
-    setPlayingIndex(index);
-
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    const arabicTexts: Record<number, string> = {
-      0: 'سبحان الله',
-      1: 'الحمد لله',
-      2: 'الله أكبر',
-      3: 'لا إله إلا الله',
-      4: 'لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير',
-    };
-
-    const textToSpeak = arabicTexts[index] ?? step.arabic;
-    console.log('Speaking dhikr:', step.transliteration, textToSpeak);
-
-    Speech.speak(textToSpeak, {
-      language: 'ar',
-      rate: 0.8,
-      onDone: () => {
-        console.log('Speech finished for index:', index);
-        setPlayingIndex(null);
-      },
-      onError: (err) => {
-        console.log('Speech error:', err);
-        setPlayingIndex(null);
-      },
-      onStopped: () => {
-        setPlayingIndex(null);
-      },
-    });
   }, [playingIndex]);
 
   const ringColor = useMemo(() => {
