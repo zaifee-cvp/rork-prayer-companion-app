@@ -222,20 +222,38 @@ export default function DhikrScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    console.log('Speaking dhikr:', step.transliteration, step.arabic);
+    const arabicPronunciations: Record<number, string> = {
+      0: 'سُبْحَانَ ٱللَّٰهِ',
+      1: 'ٱلْحَمْدُ لِلَّٰهِ',
+      2: 'ٱللَّٰهُ أَكْبَرُ',
+      3: 'لَا إِلَٰهَ إِلَّا ٱللَّٰهُ',
+      4: 'لَا إِلَٰهَ إِلَّا ٱللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ لَهُ ٱلْمُلْكُ وَلَهُ ٱلْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
+    };
 
-    Speech.speak(step.arabic, {
-      language: 'ar',
-      rate: 0.85,
-      onDone: () => {
-        console.log('Speech finished for index:', index);
-        setPlayingIndex(null);
-      },
-      onError: (err) => {
-        console.log('Speech error:', err);
-        setPlayingIndex(null);
-      },
-    });
+    const textToSpeak = arabicPronunciations[index] ?? step.arabic;
+    console.log('Speaking dhikr:', step.transliteration, textToSpeak);
+
+    const trySpeak = (lang: string) => {
+      Speech.speak(textToSpeak, {
+        language: lang,
+        rate: 0.75,
+        pitch: 1.0,
+        onDone: () => {
+          console.log('Speech finished for index:', index);
+          setPlayingIndex(null);
+        },
+        onError: (err) => {
+          console.log('Speech error with lang', lang, ':', err);
+          if (lang === 'ar-SA') {
+            trySpeak('ar');
+          } else {
+            setPlayingIndex(null);
+          }
+        },
+      });
+    };
+
+    trySpeak('ar-SA');
   }, [playingIndex]);
 
   const ringColor = useMemo(() => {
