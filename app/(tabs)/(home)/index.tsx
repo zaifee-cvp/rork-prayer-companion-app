@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -46,9 +46,15 @@ const PRAYER_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function HomeScreen() {
-  const { theme, isDark, settings, prayerTimes, nextPrayer, hijriDate, now, city } = useApp();
+  const { theme, isDark, settings, prayerTimes, nextPrayer, hijriDate, now, city, isLoading } = useApp();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !settings.onboardingComplete) {
+      router.replace('/onboarding' as any);
+    }
+  }, [isLoading, settings.onboardingComplete]);
 
   const timeUntil = useMemo(() => {
     if (!nextPrayer) return null;

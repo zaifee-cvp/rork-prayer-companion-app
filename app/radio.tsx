@@ -17,7 +17,12 @@ import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
 
-const RADIO_STREAM_URL = 'https://Qurango.com/radio/tarateel';
+const RADIO_STREAMS = [
+  'https://qurango.com/radio/tarateel',
+  'https://stream.radiojar.com/0tpy1h0kxtzuv',
+];
+
+const RADIO_STREAM_URL = RADIO_STREAMS[0];
 
 type RadioState = 'idle' | 'loading' | 'playing' | 'error';
 
@@ -150,6 +155,7 @@ export default function RadioScreen() {
   }, [radioState]);
 
   const handleRetry = useCallback(() => {
+    console.log('[Radio] Retrying stream');
     setRadioState('idle');
   }, []);
 
