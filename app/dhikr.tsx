@@ -205,7 +205,7 @@ export default function DhikrScreen() {
     animateStepTransition();
   }, [mode, animateStepTransition]);
 
-  const handlePlayVoice = useCallback((index: number) => {
+  const handlePlayVoice = useCallback(async (index: number) => {
     const step = TASBIH_SEQUENCE[index];
     if (!step?.spokenText) return;
 
@@ -215,20 +215,53 @@ export default function DhikrScreen() {
       return;
     }
 
-    Speech.stop();
+    try {
+      const isSpeaking = await Speech.isSpeakingAsync();
+      if (isSpeaking) {
+        Speech.stop();
+      }
+    } catch (e) {
+      console.log('Speech.isSpeakingAsync error:', e);
+    }
+
     setPlayingIndex(index);
 
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    Speech.speak(step.spokenText, {
-      language: 'ar',
-      rate: 0.8,
-      onDone: () => setPlayingIndex(null),
-      onError: () => setPlayingIndex(null),
-      onStopped: () => setPlayingIndex(null),
-    });
+    try {
+      const voices = await Speech.getAvailableVoicesAsync();
+      const arabicVoice = voices.find(v => v.language?.startsWith('ar'));
+      console.log('Available Arabic voice:', arabicVoice?.identifier ?? 'none');
+
+      const options: Speech.SpeechOptions = {
+        language: arabicVoice ? arabicVoice.language : 'ar-SA',
+        rate: 0.8,
+        onDone: () => {
+          console.log('Speech done for index:', index);
+          setPlayingIndex(null);
+        },
+        onError: (err) => {
+          console.log('Speech error:', err);
+          setPlayingIndex(null);
+        },
+        onStopped: () => {
+          console.log('Speech stopped for index:', index);
+          setPlayingIndex(null);
+        },
+      };
+
+      if (arabicVoice?.identifier) {
+        options.voice = arabicVoice.identifier;
+      }
+
+      Speech.speak(step.spokenText, options);
+      console.log('Speech.speak called for:', step.transliteration);
+    } catch (err) {
+      console.log('Speech error caught:', err);
+      setPlayingIndex(null);
+    }
   }, [playingIndex]);
 
   const ringColor = useMemo(() => {
