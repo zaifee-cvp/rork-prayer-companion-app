@@ -471,7 +471,7 @@ export default function MoreScreen() {
           </View>
           <View style={styles.row}>
             <Text style={[styles.rowText, { color: theme.textSecondary, marginLeft: 34, fontSize: 13 }]}>
-              Prayer Companion v1.0.0
+              Prayer Companion: Quran & Qibla v1.0.0
             </Text>
           </View>
         </View>

@@ -27,7 +27,7 @@ import cities from '@/constants/cities';
 import { CALCULATION_METHODS } from '@/utils/prayer-times';
 
 const STEPS = [
-  { key: 'welcome', title: 'Prayer Companion', subtitle: 'Your daily spiritual guide', icon: 'moon' },
+  { key: 'welcome', title: 'Prayer Companion', subtitle: 'Quran & Qibla — Your daily spiritual guide', icon: 'moon' },
   { key: 'location', title: 'Your Location', subtitle: 'For accurate prayer times', icon: 'map' },
   { key: 'method', title: 'Calculation Method', subtitle: 'Choose your preferred method', icon: 'calc' },
   { key: 'madhab', title: 'Madhab', subtitle: 'For Asr prayer calculation', icon: 'calc' },
@@ -89,7 +89,7 @@ export default function OnboardingScreen() {
               >
                 <Moon size={48} color="#fff" />
               </LinearGradient>
-              <Text style={[styles.welcomeTitle, { color: theme.text }]}>Prayer Companion</Text>
+              <Text style={[styles.welcomeTitle, { color: theme.text }]}>Prayer Companion: Quran & Qibla</Text>
               <Text style={[styles.welcomeSubtitle, { color: theme.textSecondary }]}>
                 Accurate prayer times, Qibla direction, Quran reading, and dhikr — beautifully crafted for your daily spiritual journey.
               </Text>
