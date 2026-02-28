@@ -252,7 +252,7 @@ export default function DhikrScreen() {
 
     try {
       if (playingIndex === index) {
-        if (index === 1) {
+        if (index === 0 || index === 1) {
           await stopAudio();
         } else {
           await Speech.stop();
@@ -274,16 +274,21 @@ export default function DhikrScreen() {
 
       setPlayingIndex(index);
 
-      if (index === 1) {
-        console.log('Playing MP3 for Alhamdulillah');
+      if (index === 0 || index === 1) {
+        const audioFiles: Record<number, any> = {
+          0: require('@/assets/audio/subhanallah.mp3'),
+          1: require('@/assets/audio/alhamdulillah.mp3'),
+        };
+        const labels: Record<number, string> = { 0: 'SubhanAllah', 1: 'Alhamdulillah' };
+        console.log(`Playing MP3 for ${labels[index]}`);
         const { sound } = await Audio.Sound.createAsync(
-          require('@/assets/audio/alhamdulillah.mp3'),
+          audioFiles[index],
           { shouldPlay: true }
         );
         audioRef.current = sound;
         sound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
-            console.log('MP3 playback finished for Alhamdulillah');
+            console.log(`MP3 playback finished for ${labels[index]}`);
             setPlayingIndex(null);
             sound.unloadAsync();
             audioRef.current = null;
