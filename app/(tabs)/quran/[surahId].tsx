@@ -11,15 +11,14 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ChevronLeft, Globe, Type, Languages, BookOpen, Eye, EyeOff, Play, Pause, Square, Volume2 } from 'lucide-react-native';
+import { ChevronLeft, Globe, Type, Languages, BookOpen, Eye, EyeOff } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
 import { surahs } from '@/constants/quran-data';
 import { getTranslationById, QURAN_TRANSLATIONS } from '@/constants/quran-translations';
-import { getReciterById } from '@/constants/reciters';
-import { useQuranAudio } from '@/hooks/useQuranAudio';
+
 
 interface QuranWord {
   id: number;
@@ -67,8 +66,6 @@ async function cacheSurahData(surahNum: number, translationId: number, data: Cac
     console.log('[Quran] Cache write failed:', e);
   }
 }
-
-export type AyahAudioState = 'idle' | 'loading' | 'playing' | 'paused';
 
 interface TogglePillProps {
   label: string;
@@ -119,8 +116,6 @@ interface AyahCardProps {
   translitFontSize: number;
   isDark: boolean;
   theme: any;
-  audioState: AyahAudioState;
-  onAudioPress: (ayahNumber: number) => void;
 }
 
 const AyahCard = React.memo(({
@@ -134,24 +129,17 @@ const AyahCard = React.memo(({
   translitFontSize,
   isDark,
   theme,
-  audioState,
-  onAudioPress,
 }: AyahCardProps) => {
   const translationText = verse.translations?.[0]?.text;
   const stripHtml = (text: string) => text.replace(/<[^>]*>/g, '');
 
-  const isActive = audioState !== 'idle';
-  const cardBg = isActive
-    ? isDark ? 'rgba(0,212,230,0.06)' : 'rgba(0,212,230,0.04)'
-    : index % 2 === 0 ? theme.surface : 'transparent';
+  const cardBg = index % 2 === 0 ? theme.surface : 'transparent';
 
   return (
     <View
       style={[
         styles.ayahCard,
         { backgroundColor: cardBg },
-        isActive && styles.ayahCardActive,
-        isActive && { borderColor: isDark ? 'rgba(0,212,230,0.15)' : 'rgba(0,212,230,0.2)' },
       ]}
     >
       <View style={styles.ayahHeader}>
@@ -161,26 +149,6 @@ const AyahCard = React.memo(({
           </Text>
         </View>
         <View style={[styles.ayahDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]} />
-        <TouchableOpacity
-          onPress={() => onAudioPress(verse.verse_number)}
-          style={[
-            styles.audioBtn,
-            isActive && { backgroundColor: isDark ? 'rgba(0,212,230,0.12)' : 'rgba(0,212,230,0.08)' },
-          ]}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          activeOpacity={0.6}
-          testID={`ayah-audio-${verse.verse_number}`}
-        >
-          {audioState === 'loading' ? (
-            <ActivityIndicator size={14} color={Colors.primary} />
-          ) : audioState === 'playing' ? (
-            <Pause size={13} color={Colors.primary} strokeWidth={2.5} />
-          ) : audioState === 'paused' ? (
-            <Play size={13} color={Colors.primary} strokeWidth={2.5} />
-          ) : (
-            <Play size={13} color={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)'} strokeWidth={2} />
-          )}
-        </TouchableOpacity>
       </View>
 
       {showArabic && (
@@ -238,11 +206,6 @@ export default function SurahScreen() {
     [settings.quranTranslationId],
   );
 
-  const currentReciter = useMemo(
-    () => getReciterById(settings.selectedReciterId),
-    [settings.selectedReciterId],
-  );
-
   const versesQuery = useQuery({
     queryKey: ['quran-verses', surahNum, settings.quranTranslationId],
     queryFn: async () => {
@@ -285,26 +248,6 @@ export default function SurahScreen() {
     },
   });
 
-  const audio = useQuranAudio({
-    surahNumber: surahNum,
-    totalVerses: versesQuery.data?.verses?.length ?? 0,
-    reciterFolder: currentReciter.folder,
-    autoPlayNext: settings.autoPlayNextAyah,
-  });
-
-  useEffect(() => {
-    if (audio.currentAyah !== null && audio.isPlaying && versesQuery.data?.verses) {
-      const index = versesQuery.data.verses.findIndex((v) => v.verse_number === audio.currentAyah);
-      if (index >= 0) {
-        try {
-          flatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.3 });
-        } catch {
-          console.log('[Quran] scrollToIndex failed, ignoring');
-        }
-      }
-    }
-  }, [audio.currentAyah]);
-
   const toggleArabic = useCallback(() => {
     if (!showTransliteration && !showTranslation && showArabic) return;
     updateSettings({ showArabic: !showArabic });
@@ -319,13 +262,6 @@ export default function SurahScreen() {
     if (!showArabic && !showTransliteration && showTranslation) return;
     updateSettings({ showTranslation: !showTranslation });
   }, [showArabic, showTransliteration, showTranslation, updateSettings]);
-
-  const getAyahAudioState = useCallback((verseNumber: number): AyahAudioState => {
-    if (audio.currentAyah !== verseNumber) return 'idle';
-    if (audio.isLoading) return 'loading';
-    if (audio.isPlaying) return 'playing';
-    return 'paused';
-  }, [audio.currentAyah, audio.isLoading, audio.isPlaying]);
 
   const renderAyah = useCallback(
     ({ item, index }: { item: QuranVerse; index: number }) => {
@@ -342,12 +278,10 @@ export default function SurahScreen() {
           translitFontSize={transliterationFontSize}
           isDark={isDark}
           theme={theme}
-          audioState={getAyahAudioState(item.verse_number)}
-          onAudioPress={audio.handleAyahPress}
         />
       );
     },
-    [versesQuery.data, showArabic, showTransliteration, showTranslation, arabicFontSize, transliterationFontSize, isDark, theme, getAyahAudioState, audio.handleAyahPress],
+    [versesQuery.data, showArabic, showTransliteration, showTranslation, arabicFontSize, transliterationFontSize, isDark, theme],
   );
 
   const bismillah = useMemo(() => {
@@ -361,8 +295,6 @@ export default function SurahScreen() {
 
   const keyExtractor = useCallback((item: QuranVerse) => String(item.id), []);
 
-  const hasMiniPlayer = audio.currentAyah !== null;
-
   const onScrollToIndexFailed = useCallback((info: { index: number }) => {
     setTimeout(() => {
       flatListRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.3 });
@@ -374,7 +306,7 @@ export default function SurahScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: insets.top + 4, backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        <TouchableOpacity onPress={() => { audio.stop(); router.back(); }} hitSlop={12} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
           <ChevronLeft size={24} color={Colors.primary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -441,7 +373,7 @@ export default function SurahScreen() {
           ListHeaderComponent={bismillah}
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
-          ListFooterComponent={<View style={{ height: hasMiniPlayer ? 130 : 60 }} />}
+          ListFooterComponent={<View style={{ height: 60 }} />}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={7}
@@ -449,53 +381,6 @@ export default function SurahScreen() {
         />
       )}
 
-      {hasMiniPlayer && (
-        <View
-          style={[
-            styles.miniPlayer,
-            {
-              backgroundColor: isDark ? 'rgba(13,20,24,0.96)' : 'rgba(255,255,255,0.96)',
-              borderTopColor: theme.border,
-            },
-          ]}
-          testID="mini-player"
-        >
-          <View style={[styles.miniPlayerAccent, { backgroundColor: Colors.primary, width: audio.isPlaying ? '100%' : '30%' }]} />
-          <View style={styles.miniPlayerContent}>
-            <View style={[styles.miniPlayerIcon, { backgroundColor: isDark ? 'rgba(0,212,230,0.1)' : 'rgba(0,212,230,0.06)' }]}>
-              <Volume2 size={15} color={Colors.primary} />
-            </View>
-            <View style={styles.miniPlayerInfo}>
-              <Text style={[styles.miniPlayerTitle, { color: theme.text }]} numberOfLines={1}>
-                {surah.name} · Ayah {audio.currentAyah}
-              </Text>
-              <Text style={[styles.miniPlayerSub, { color: theme.textSecondary }]} numberOfLines={1}>
-                {currentReciter.name}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={audio.togglePlayback}
-              style={[styles.miniPlayerPlayBtn, { backgroundColor: Colors.primary }]}
-              activeOpacity={0.7}
-              testID="mini-player-toggle"
-            >
-              {audio.isPlaying ? (
-                <Pause size={15} color="#fff" strokeWidth={3} />
-              ) : (
-                <Play size={15} color="#fff" strokeWidth={3} />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={audio.stop}
-              style={styles.miniPlayerStopBtn}
-              activeOpacity={0.6}
-              testID="mini-player-stop"
-            >
-              <Square size={13} color={theme.textTertiary} strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -574,10 +459,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 4,
   },
-  ayahCardActive: {
-    borderWidth: 1,
-    borderRadius: 14,
-  },
+
   ayahHeader: {
     flexDirection: 'row' as const,
     alignItems: 'center',
@@ -596,13 +478,7 @@ const styles = StyleSheet.create({
     height: 1,
   },
   ayahNum: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.semibold },
-  audioBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
   arabicText: {
     textAlign: 'right' as const,
     fontWeight: fw.regular,
@@ -632,64 +508,5 @@ const styles = StyleSheet.create({
     letterSpacing: -0.24,
     lineHeight: 22,
   },
-  miniPlayer: {
-    position: 'absolute' as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  miniPlayerAccent: {
-    height: 2,
-    borderRadius: 1,
-  },
-  miniPlayerContent: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  miniPlayerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  miniPlayerInfo: {
-    flex: 1,
-  },
-  miniPlayerTitle: {
-    fontFamily: fontFamily.system,
-    fontSize: 14,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.15,
-  },
-  miniPlayerSub: {
-    fontFamily: fontFamily.system,
-    fontSize: 11,
-    fontWeight: fw.regular,
-    letterSpacing: -0.08,
-    marginTop: 1,
-  },
-  miniPlayerPlayBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  miniPlayerStopBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
 });
