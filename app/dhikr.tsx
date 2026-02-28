@@ -44,6 +44,12 @@ const TASBIH_SEQUENCE: DhikrStep[] = [
     target: 33,
   },
   {
+    arabic: 'لَا إِلٰهَ إِلَّا اللّٰهُ',
+    transliteration: 'La ilaha illallah',
+    meaning: 'There is no god but Allah',
+    target: 1,
+  },
+  {
     arabic: 'لَا إِلٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
     transliteration: 'La ilaha illallahu, wahdahu la sharika lahu, lahul-mulku wa lahul-hamdu, wa Huwa \'ala kulli shai\'in Qadir',
     meaning: 'There is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things.',
@@ -194,7 +200,7 @@ export default function DhikrScreen() {
     if (mode === 'tasbih') {
       if (sequenceComplete) return Colors.gold;
       if (isStepComplete) return Colors.gold;
-      const stepColors = ['#00D4E6', '#34C759', '#FF9500'];
+      const stepColors = ['#00D4E6', '#34C759', '#FF9500', '#AF52DE', '#FF3B30'];
       return stepColors[stepIndex] ?? Colors.primary;
     }
     return isStepComplete ? Colors.gold : Colors.primary;
