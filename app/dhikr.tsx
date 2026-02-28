@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen, Volume2, Square } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -23,7 +23,6 @@ interface DhikrStep {
   transliteration: string;
   meaning: string;
   target: number;
-  audioUrl: string;
 }
 
 const TASBIH_SEQUENCE: DhikrStep[] = [
@@ -32,35 +31,30 @@ const TASBIH_SEQUENCE: DhikrStep[] = [
     transliteration: 'SubhanAllah',
     meaning: 'Glory be to Allah',
     target: 33,
-    audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/1.mp3',
   },
   {
     arabic: 'الْحَمْدُ للهِ',
     transliteration: 'Alhamdulillah',
     meaning: 'All praise is due to Allah',
     target: 33,
-    audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/2.mp3',
   },
   {
     arabic: 'اللّٰهُ أَكْبَرُ',
     transliteration: 'Allahu Akbar',
     meaning: 'Allah is the Greatest',
     target: 33,
-    audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/3.mp3',
   },
   {
     arabic: 'لَا إِلٰهَ إِلَّا اللّٰهُ',
     transliteration: 'La ilaha illallah',
     meaning: 'There is no god but Allah',
     target: 1,
-    audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/4.mp3',
   },
   {
     arabic: 'لَا إِلٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
     transliteration: 'La ilaha illallahu, wahdahu la sharika lahu, lahul-mulku wa lahul-hamdu, wa Huwa \'ala kulli shai\'in Qadir',
     meaning: 'There is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things.',
     target: 1,
-    audioUrl: 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/5.mp3',
   },
 ];
 
@@ -86,7 +80,6 @@ export default function DhikrScreen() {
   const [sequenceComplete, setSequenceComplete] = useState(false);
 
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const stepTransition = useRef(new Animated.Value(1)).current;
@@ -208,72 +201,41 @@ export default function DhikrScreen() {
 
   useEffect(() => {
     return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync().catch(() => {});
-      }
+      Speech.stop();
     };
   }, []);
 
   const handlePlayVoice = useCallback(async (index: number) => {
     const step = TASBIH_SEQUENCE[index];
-    if (!step?.audioUrl) return;
+    if (!step) return;
 
     if (playingIndex === index) {
-      try {
-        if (soundRef.current) {
-          await soundRef.current.stopAsync();
-          await soundRef.current.unloadAsync();
-          soundRef.current = null;
-        }
-      } catch (e) {
-        console.log('Stop audio error:', e);
-      }
+      Speech.stop();
       setPlayingIndex(null);
       return;
     }
 
-    try {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-    } catch (e) {
-      console.log('Cleanup previous audio error:', e);
-    }
-
+    Speech.stop();
     setPlayingIndex(index);
 
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-      });
+    console.log('Speaking dhikr:', step.transliteration, step.arabic);
 
-      console.log('Loading audio for:', step.transliteration, step.audioUrl);
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: step.audioUrl },
-        { shouldPlay: true }
-      );
-      soundRef.current = sound;
-      console.log('Audio playing for:', step.transliteration);
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          console.log('Audio finished for index:', index);
-          setPlayingIndex(null);
-          sound.unloadAsync().catch(() => {});
-          soundRef.current = null;
-        }
-      });
-    } catch (err) {
-      console.log('Audio error caught:', err);
-      setPlayingIndex(null);
-    }
+    Speech.speak(step.arabic, {
+      language: 'ar',
+      rate: 0.85,
+      onDone: () => {
+        console.log('Speech finished for index:', index);
+        setPlayingIndex(null);
+      },
+      onError: (err) => {
+        console.log('Speech error:', err);
+        setPlayingIndex(null);
+      },
+    });
   }, [playingIndex]);
 
   const ringColor = useMemo(() => {
