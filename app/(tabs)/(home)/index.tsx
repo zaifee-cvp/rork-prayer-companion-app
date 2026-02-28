@@ -21,6 +21,7 @@ import {
   Sunset,
   CloudSun,
   Clock,
+  Radio,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -185,6 +186,22 @@ export default function HomeScreen() {
             {hijriDate.day} {hijriDate.monthNameAr} {hijriDate.year} هـ
           </Text>
         </View>
+
+        <TouchableOpacity
+          style={[styles.radioCard, { backgroundColor: isDark ? '#0D1C22' : '#E6FAFB' }]}
+          onPress={() => router.push('/radio' as any)}
+          activeOpacity={0.7}
+          testID="quick-radio"
+        >
+          <View style={styles.radioIconWrap}>
+            <Radio size={22} color="#fff" />
+          </View>
+          <View style={styles.radioTextWrap}>
+            <Text style={[styles.radioTitle, { color: theme.text }]}>Live Quran Radio</Text>
+            <Text style={[styles.radioSub, { color: theme.textSecondary }]}>Listen to live recitation</Text>
+          </View>
+          <ChevronRight size={18} color={theme.textTertiary} />
+        </TouchableOpacity>
 
         <View style={styles.quickActions}>
           <TouchableOpacity
@@ -477,6 +494,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: fw.regular,
     color: 'rgba(255,255,255,0.8)',
+    letterSpacing: -0.08,
+    marginTop: 2,
+  },
+  radioCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  radioIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioTextWrap: {
+    flex: 1,
+  },
+  radioTitle: {
+    fontFamily: fontFamily.system,
+    fontSize: 16,
+    fontWeight: fw.semibold,
+    letterSpacing: -0.32,
+  },
+  radioSub: {
+    fontFamily: fontFamily.system,
+    fontSize: 13,
+    fontWeight: fw.regular,
     letterSpacing: -0.08,
     marginTop: 2,
   },

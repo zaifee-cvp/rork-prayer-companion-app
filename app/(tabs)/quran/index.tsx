@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,10 @@ import {
   TouchableOpacity,
   TextInput,
   SectionList,
-  Animated,
-  Platform,
-  ActivityIndicator,
 } from 'react-native';
-import { Audio } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Search, Lock, Star, Globe, Check, Radio, Play, Pause, X, ChevronDown } from 'lucide-react-native';
+import { Search, Lock, Star, Globe, Check, Radio, ChevronRight } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
@@ -29,192 +25,12 @@ import {
 
 type TabType = 'surah' | 'juz' | 'translation';
 
-interface RadioStation {
-  id: string;
-  name: string;
-  nameArabic: string;
-  url: string;
-  reciter: string;
-}
-
-const RADIO_STATIONS: RadioStation[] = [
-  {
-    id: 'quran-radio',
-    name: 'Quran Radio',
-    nameArabic: 'إذاعة القرآن الكريم',
-    url: 'https://Qurango.com/radio/tarateel',
-    reciter: 'Various Reciters',
-  },
-  {
-    id: 'alafasy',
-    name: 'Mishary Alafasy',
-    nameArabic: 'مشاري العفاسي',
-    url: 'https://Qurango.com/radio/mishary',
-    reciter: 'Mishary Rashid Alafasy',
-  },
-  {
-    id: 'sudais',
-    name: 'Abdur-Rahman As-Sudais',
-    nameArabic: 'عبدالرحمن السديس',
-    url: 'https://Qurango.com/radio/sudais',
-    reciter: 'Abdur-Rahman As-Sudais',
-  },
-  {
-    id: 'husary',
-    name: 'Al-Husary',
-    nameArabic: 'محمود خليل الحصري',
-    url: 'https://Qurango.com/radio/husary',
-    reciter: 'Mahmoud Khalil Al-Husary',
-  },
-  {
-    id: 'abdulbasit',
-    name: 'Abdul Basit',
-    nameArabic: 'عبد الباسط عبد الصمد',
-    url: 'https://Qurango.com/radio/abdulbasit',
-    reciter: 'Abdul Basit Abdus-Samad',
-  },
-  {
-    id: 'minshawi',
-    name: 'Al-Minshawi',
-    nameArabic: 'محمد صديق المنشاوي',
-    url: 'https://Qurango.com/radio/minshawi',
-    reciter: 'Mohamed Siddiq Al-Minshawi',
-  },
-];
-
 export default function QuranScreen() {
   const { theme, isDark, settings, updateSettings } = useApp();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('surah');
-
-  const [radioVisible, setRadioVisible] = useState(false);
-  const [radioPlaying, setRadioPlaying] = useState(false);
-  const [radioLoading, setRadioLoading] = useState(false);
-  const [selectedStation, setSelectedStation] = useState<RadioStation>(RADIO_STATIONS[0]);
-  const [showStationPicker, setShowStationPicker] = useState(false);
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const playerSlideAnim = useRef(new Animated.Value(300)).current;
-
-  useEffect(() => {
-    if (radioPlaying) {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.15, duration: 800, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [radioPlaying]);
-
-  const openRadio = useCallback(() => {
-    setRadioVisible(true);
-    Animated.spring(playerSlideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
-  }, []);
-
-  const closeRadio = useCallback(async () => {
-    Animated.timing(playerSlideAnim, { toValue: 300, duration: 250, useNativeDriver: true }).start(() => {
-      setRadioVisible(false);
-      setShowStationPicker(false);
-    });
-    if (soundRef.current) {
-      try {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-      } catch (e) {
-        console.log('[Radio] Cleanup error:', e);
-      }
-      soundRef.current = null;
-    }
-    setRadioPlaying(false);
-    setRadioLoading(false);
-  }, []);
-
-  const playRadio = useCallback(async (station: RadioStation) => {
-    console.log(`[Radio] Playing station: ${station.name}`);
-    setRadioLoading(true);
-    setSelectedStation(station);
-    setShowStationPicker(false);
-
-    if (soundRef.current) {
-      try {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-      } catch (e) {
-        console.log('[Radio] Stop previous error:', e);
-      }
-      soundRef.current = null;
-    }
-
-    try {
-      if (Platform.OS !== 'web') {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: false,
-        });
-      }
-
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: station.url },
-        { shouldPlay: true },
-      );
-      soundRef.current = sound;
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          if (status.isPlaying) {
-            setRadioPlaying(true);
-            setRadioLoading(false);
-          }
-        }
-      });
-
-      setRadioPlaying(true);
-      setRadioLoading(false);
-      console.log(`[Radio] Now playing: ${station.name}`);
-    } catch (e) {
-      console.log('[Radio] Play error:', e);
-      setRadioPlaying(false);
-      setRadioLoading(false);
-    }
-  }, []);
-
-  const toggleRadio = useCallback(async () => {
-    if (radioPlaying && soundRef.current) {
-      try {
-        await soundRef.current.pauseAsync();
-        setRadioPlaying(false);
-      } catch (e) {
-        console.log('[Radio] Pause error:', e);
-      }
-    } else if (soundRef.current) {
-      try {
-        await soundRef.current.playAsync();
-        setRadioPlaying(true);
-      } catch (e) {
-        console.log('[Radio] Resume error:', e);
-      }
-    } else {
-      await playRadio(selectedStation);
-    }
-  }, [radioPlaying, selectedStation, playRadio]);
-
-  useEffect(() => {
-    return () => {
-      if (soundRef.current) {
-        soundRef.current.stopAsync().catch(() => {});
-        soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
-    };
-  }, []);
 
   const currentTranslation = useMemo(
     () => getTranslationById(settings.quranTranslationId) ?? QURAN_TRANSLATIONS[0],
@@ -414,41 +230,26 @@ export default function QuranScreen() {
         style={[
           styles.radioButton,
           {
-            backgroundColor: radioPlaying
-              ? isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)'
-              : isDark ? 'rgba(0,212,230,0.1)' : 'rgba(0,212,230,0.06)',
-            borderColor: radioPlaying
-              ? isDark ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.2)'
-              : isDark ? 'rgba(0,212,230,0.2)' : 'rgba(0,212,230,0.15)',
+            backgroundColor: isDark ? 'rgba(0,212,230,0.1)' : 'rgba(0,212,230,0.06)',
+            borderColor: isDark ? 'rgba(0,212,230,0.2)' : 'rgba(0,212,230,0.15)',
           },
         ]}
-        onPress={openRadio}
+        onPress={() => router.push('/radio' as any)}
         activeOpacity={0.7}
         testID="live-radio-btn"
       >
-        <Animated.View style={[styles.radioIconWrap, { transform: [{ scale: pulseAnim }] }]}>
-          <View style={[
-            styles.radioIconBg,
-            { backgroundColor: radioPlaying ? '#EF4444' : Colors.primary },
-          ]}>
-            <Radio size={16} color="#fff" strokeWidth={2.5} />
-          </View>
-        </Animated.View>
+        <View style={[styles.radioIconBg, { backgroundColor: Colors.primary }]}>
+          <Radio size={16} color="#fff" strokeWidth={2.5} />
+        </View>
         <View style={styles.radioButtonInfo}>
           <Text style={[styles.radioButtonTitle, { color: theme.text }]}>
-            {radioPlaying ? 'LIVE' : 'Quran Radio'}
+            Live Quran Radio
           </Text>
-          <Text style={[styles.radioButtonSub, { color: radioPlaying ? '#EF4444' : theme.textSecondary }]} numberOfLines={1}>
-            {radioPlaying ? selectedStation.name : 'Tap to listen live'}
+          <Text style={[styles.radioButtonSub, { color: theme.textSecondary }]} numberOfLines={1}>
+            Tap to listen live
           </Text>
         </View>
-        {radioPlaying && (
-          <View style={styles.liveIndicator}>
-            <View style={[styles.liveDot, { backgroundColor: '#EF4444' }]} />
-            <View style={[styles.liveDot, styles.liveDot2, { backgroundColor: '#EF4444' }]} />
-            <View style={[styles.liveDot, styles.liveDot3, { backgroundColor: '#EF4444' }]} />
-          </View>
-        )}
+        <ChevronRight size={18} color={theme.textTertiary} />
       </TouchableOpacity>
 
       {activeTab === 'surah' ? (
@@ -456,7 +257,7 @@ export default function QuranScreen() {
           data={filtered}
           renderItem={renderSurah}
           keyExtractor={(item) => String(item.number)}
-          contentContainerStyle={[styles.list, { paddingBottom: radioVisible ? 140 : 40 }]}
+          contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
         />
@@ -513,115 +314,6 @@ export default function QuranScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
           stickySectionHeadersEnabled
         />
-      )}
-
-      {radioVisible && (
-        <Animated.View
-          style={[
-            styles.radioPlayer,
-            {
-              backgroundColor: isDark ? 'rgba(13,20,24,0.98)' : 'rgba(255,255,255,0.98)',
-              borderTopColor: theme.border,
-              transform: [{ translateY: playerSlideAnim }],
-            },
-          ]}
-          testID="radio-player"
-        >
-          <View style={[styles.radioPlayerHandle, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)' }]} />
-
-          <View style={styles.radioPlayerHeader}>
-            <View style={styles.radioPlayerHeaderLeft}>
-              <View style={[styles.radioLiveBadge, { backgroundColor: radioPlaying ? '#EF4444' : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-                <Radio size={12} color={radioPlaying ? '#fff' : theme.textSecondary} strokeWidth={2.5} />
-                <Text style={[styles.radioLiveText, { color: radioPlaying ? '#fff' : theme.textSecondary }]}>
-                  {radioPlaying ? 'LIVE' : 'RADIO'}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity onPress={closeRadio} hitSlop={12} style={styles.radioCloseBtn}>
-              <X size={18} color={theme.textSecondary} strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.stationSelector,
-              {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-                borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-              },
-            ]}
-            onPress={() => setShowStationPicker(!showStationPicker)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.stationNameArabic, { color: theme.textSecondary }]}>
-              {selectedStation.nameArabic}
-            </Text>
-            <Text style={[styles.stationName, { color: theme.text }]} numberOfLines={1}>
-              {selectedStation.name}
-            </Text>
-            <ChevronDown size={16} color={theme.textSecondary} strokeWidth={2.5} />
-          </TouchableOpacity>
-
-          {showStationPicker && (
-            <View style={[
-              styles.stationList,
-              { backgroundColor: isDark ? 'rgba(20,28,34,0.98)' : 'rgba(245,248,250,0.98)', borderColor: theme.border },
-            ]}>
-              {RADIO_STATIONS.map((station) => {
-                const isActive = station.id === selectedStation.id;
-                return (
-                  <TouchableOpacity
-                    key={station.id}
-                    style={[
-                      styles.stationItem,
-                      isActive && { backgroundColor: isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.05)' },
-                    ]}
-                    onPress={() => playRadio(station)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.stationItemArabic, { color: theme.textSecondary }]}>{station.nameArabic}</Text>
-                    <View style={styles.stationItemInfo}>
-                      <Text style={[styles.stationItemName, { color: isActive ? Colors.primary : theme.text }]}>
-                        {station.name}
-                      </Text>
-                      <Text style={[styles.stationItemReciter, { color: theme.textSecondary }]}>
-                        {station.reciter}
-                      </Text>
-                    </View>
-                    {isActive && radioPlaying && (
-                      <View style={styles.stationPlayingDots}>
-                        <View style={[styles.liveDot, { backgroundColor: Colors.primary }]} />
-                        <View style={[styles.liveDot, styles.liveDot2, { backgroundColor: Colors.primary }]} />
-                        <View style={[styles.liveDot, styles.liveDot3, { backgroundColor: Colors.primary }]} />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-
-          <View style={styles.radioControls}>
-            <TouchableOpacity
-              style={[
-                styles.radioPlayBtn,
-                { backgroundColor: radioPlaying ? '#EF4444' : Colors.primary },
-              ]}
-              onPress={toggleRadio}
-              activeOpacity={0.7}
-              testID="radio-play-toggle"
-            >
-              {radioLoading ? (
-                <ActivityIndicator size={22} color="#fff" />
-              ) : radioPlaying ? (
-                <Pause size={22} color="#fff" strokeWidth={2.5} />
-              ) : (
-                <Play size={22} color="#fff" strokeWidth={2.5} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
       )}
     </View>
   );
@@ -694,7 +386,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 12,
   },
-  radioIconWrap: {},
   radioIconBg: {
     width: 36,
     height: 36,
@@ -714,153 +405,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: fw.regular,
     marginTop: 2,
-  },
-  liveIndicator: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-end',
-    gap: 3,
-    height: 16,
-  },
-  liveDot: {
-    width: 3,
-    height: 6,
-    borderRadius: 1.5,
-  },
-  liveDot2: {
-    height: 12,
-  },
-  liveDot3: {
-    height: 8,
-  },
-  radioPlayer: {
-    position: 'absolute' as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  radioPlayerHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 12,
-  },
-  radioPlayerHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  radioPlayerHeaderLeft: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 8,
-  },
-  radioLiveBadge: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  radioLiveText: {
-    fontFamily: fontFamily.system,
-    fontSize: 11,
-    fontWeight: fw.bold,
-    letterSpacing: 1,
-  },
-  radioCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stationSelector: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 10,
-    marginBottom: 16,
-  },
-  stationNameArabic: {
-    fontSize: 16,
-    fontWeight: fw.regular,
-  },
-  stationName: {
-    fontFamily: fontFamily.system,
-    fontSize: 15,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.24,
-    flex: 1,
-  },
-  stationList: {
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 16,
-    maxHeight: 220,
-    overflow: 'hidden' as const,
-  },
-  stationItem: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  stationItemArabic: {
-    fontSize: 14,
-    width: 28,
-    textAlign: 'center' as const,
-  },
-  stationItemInfo: { flex: 1 },
-  stationItemName: {
-    fontFamily: fontFamily.system,
-    fontSize: 14,
-    fontWeight: fw.semibold,
-    letterSpacing: -0.15,
-  },
-  stationItemReciter: {
-    fontFamily: fontFamily.system,
-    fontSize: 11,
-    fontWeight: fw.regular,
-    marginTop: 1,
-  },
-  stationPlayingDots: {
-    flexDirection: 'row' as const,
-    alignItems: 'flex-end',
-    gap: 2,
-    height: 14,
-  },
-  radioControls: {
-    alignItems: 'center',
-  },
-  radioPlayBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   surahRow: {
     flexDirection: 'row' as const,

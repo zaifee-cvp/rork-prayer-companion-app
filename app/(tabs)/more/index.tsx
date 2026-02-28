@@ -31,18 +31,16 @@ import {
   BookOpen,
   Languages,
   Type,
-  Volume2,
-  SkipForward,
+  VolumeX,
   Timer,
+  Radio,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
 import cities from '@/constants/cities';
 import { CALCULATION_METHODS, PrayerName, PRAYER_DISPLAY_NAMES } from '@/utils/prayer-times';
-import { RECITERS, getReciterById } from '@/constants/reciters';
-
-type ModalType = 'city' | 'method' | 'timezone' | 'reciter' | null;
+type ModalType = 'city' | 'method' | 'timezone' | null;
 
 const TIMEZONES = [
   'Asia/Riyadh', 'Asia/Dubai', 'Asia/Karachi', 'Asia/Kolkata', 'Asia/Dhaka',
@@ -355,28 +353,21 @@ export default function MoreScreen() {
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>QURAN AUDIO</Text>
-          <TouchableOpacity style={styles.row} onPress={() => setActiveModal('reciter')}>
-            <Volume2 size={20} color={Colors.primary} />
+          <View style={styles.row}>
+            <VolumeX size={20} color={theme.textTertiary} />
             <View style={styles.rowContent}>
-              <Text style={[styles.rowText, { color: theme.text }]}>Reciter</Text>
-              <Text style={[styles.rowValue, { color: theme.textSecondary }]} numberOfLines={1}>
-                {getReciterById(settings.selectedReciterId).name}
-              </Text>
+              <Text style={[styles.rowText, { color: theme.textTertiary }]}>Reciter Playback</Text>
+              <Text style={[styles.rowValue, { color: theme.textTertiary }]}>Audio temporarily unavailable</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/radio' as any)}>
+            <Radio size={20} color={Colors.primary} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowText, { color: theme.text }]}>Live Quran Radio</Text>
+              <Text style={[styles.rowValue, { color: theme.textSecondary }]}>Listen to live recitation</Text>
             </View>
             <ChevronRight size={18} color={theme.textTertiary} />
           </TouchableOpacity>
-          <View style={styles.row}>
-            <SkipForward size={20} color={Colors.primary} />
-            <Text style={[styles.rowText, { color: theme.text }]}>Auto-play Next Ayah</Text>
-            <Switch
-              value={settings.autoPlayNextAyah}
-              onValueChange={(v) => updateSettings({ autoPlayNextAyah: v })}
-              trackColor={{ true: Colors.primary }}
-            />
-          </View>
-          <Text style={[styles.noteText, { color: theme.textTertiary }]}>
-            Audio streams from EveryAyah.com. Cached locally after first play.
-          </Text>
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
@@ -548,35 +539,6 @@ export default function MoreScreen() {
                     <Text style={[styles.modalRowSub, { color: theme.textSecondary }]}>
                       Fajr: {method.params.fajr}° · Isha: {method.params.ishaMinutes ? `${method.params.ishaMinutes}min` : `${method.params.isha}°`}
                     </Text>
-                  </View>
-                  {selected && <Check size={18} color={Colors.primary} />}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
-
-      <Modal visible={activeModal === 'reciter'} animationType="slide" presentationStyle="pageSheet">
-        <View style={[styles.modalRoot, { backgroundColor: theme.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>Reciter</Text>
-            <TouchableOpacity onPress={() => setActiveModal(null)}>
-              <Text style={[styles.modalDone, { color: Colors.primary }]}>Done</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView>
-            {RECITERS.map((reciter) => {
-              const selected = reciter.id === settings.selectedReciterId;
-              return (
-                <TouchableOpacity
-                  key={reciter.id}
-                  style={[styles.modalRow, selected && { backgroundColor: isDark ? 'rgba(0,212,230,0.08)' : 'rgba(0,212,230,0.04)' }]}
-                  onPress={() => { updateSettings({ selectedReciterId: reciter.id }); setActiveModal(null); }}
-                >
-                  <View style={styles.modalRowContent}>
-                    <Text style={[styles.modalRowText, { color: theme.text }]}>{reciter.name}</Text>
-                    <Text style={[styles.modalRowSub, { color: theme.textSecondary }]}>{reciter.nameArabic}</Text>
                   </View>
                   {selected && <Check size={18} color={Colors.primary} />}
                 </TouchableOpacity>
