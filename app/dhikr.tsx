@@ -80,6 +80,7 @@ export default function DhikrScreen() {
   const [sequenceComplete, setSequenceComplete] = useState(false);
 
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [arabicVoice, setArabicVoice] = useState<string | undefined>(undefined);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const stepTransition = useRef(new Animated.Value(1)).current;
@@ -200,6 +201,29 @@ export default function DhikrScreen() {
   }, [mode, animateStepTransition]);
 
   useEffect(() => {
+    const loadVoices = async () => {
+      try {
+        const voices = await Speech.getAvailableVoicesAsync();
+        const arabicVoices = voices.filter(v => v.language.startsWith('ar'));
+        console.log('Available Arabic voices:', arabicVoices.map(v => ({ id: v.identifier, name: v.name, quality: v.quality })));
+
+        const enhanced = arabicVoices.find(v =>
+          v.quality === Speech.VoiceQuality.Enhanced ||
+          v.name.toLowerCase().includes('enhanced') ||
+          v.name.toLowerCase().includes('premium') ||
+          v.name.toLowerCase().includes('compact') === false
+        );
+        const preferred = enhanced ?? arabicVoices[0];
+        if (preferred) {
+          console.log('Selected Arabic voice:', preferred.identifier, preferred.name);
+          setArabicVoice(preferred.identifier);
+        }
+      } catch (e) {
+        console.log('Could not load voices:', e);
+      }
+    };
+    loadVoices();
+
     return () => {
       Speech.stop();
     };
@@ -256,8 +280,9 @@ export default function DhikrScreen() {
 
       Speech.speak(textToSpeak, {
         language: lang,
-        rate: useArabic ? 0.5 : 0.6,
-        pitch: 1.0,
+        ...(useArabic && arabicVoice ? { voice: arabicVoice } : {}),
+        rate: useArabic ? 0.45 : 0.55,
+        pitch: 0.95,
         onStart: () => {
           console.log('Speech started for index:', index);
         },
@@ -278,7 +303,7 @@ export default function DhikrScreen() {
       console.log('handlePlayVoice error:', err);
       setPlayingIndex(null);
     }
-  }, [playingIndex]);
+  }, [playingIndex, arabicVoice]);
 
   const ringColor = useMemo(() => {
     if (mode === 'tasbih') {
