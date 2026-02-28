@@ -17,11 +17,11 @@ import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
 
 const RADIO_STREAMS = [
-  'https://qurango.com/radio/tarateel',
+  'https://Qurango.com/radio/tarateel',
   'https://stream.radiojar.com/0tpy1h0kxtzuv',
+  'https://backup.qurango.com/radio/tarateel',
+  'http://live.mp3quran.net:8006/;',
 ];
-
-const RADIO_STREAM_URL = RADIO_STREAMS[0];
 
 type RadioState = 'idle' | 'loading' | 'playing' | 'error';
 
@@ -86,36 +86,47 @@ export default function RadioScreen() {
       return;
     }
 
-    console.log('[Radio] Starting stream:', RADIO_STREAM_URL);
     setRadioState('loading');
 
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: RADIO_STREAM_URL },
-        { shouldPlay: true, isLooping: false },
-      );
+    let loaded = false;
+    for (let i = 0; i < RADIO_STREAMS.length; i++) {
+      const url = RADIO_STREAMS[i];
+      console.log(`[Radio] Trying stream ${i + 1}/${RADIO_STREAMS.length}:`, url);
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: url },
+          { shouldPlay: true, isLooping: false },
+        );
 
-      if (!isMountedRef.current) { await sound.unloadAsync(); return; }
-      soundRef.current = sound;
+        if (!isMountedRef.current) { await sound.unloadAsync(); return; }
+        soundRef.current = sound;
 
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (!isMountedRef.current) return;
-        if (!status.isLoaded) {
-          if ('error' in status && status.error) {
-            console.log('[Radio] Playback error:', status.error);
-            setRadioState('error');
-            soundRef.current = null;
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (!isMountedRef.current) return;
+          if (!status.isLoaded) {
+            if ('error' in status && status.error) {
+              console.log('[Radio] Playback error:', status.error);
+              setRadioState('error');
+              soundRef.current = null;
+            }
           }
-        }
-      });
+        });
 
-      if (isMountedRef.current) {
-        setRadioState('playing');
-        console.log('[Radio] Stream playing');
+        if (isMountedRef.current) {
+          setRadioState('playing');
+          console.log('[Radio] Stream playing from:', url);
+        }
+        loaded = true;
+        break;
+      } catch (e) {
+        console.log(`[Radio] Stream ${i + 1} failed:`, e);
+        continue;
       }
-    } catch (e) {
-      console.log('[Radio] Stream load error:', e);
-      if (isMountedRef.current) setRadioState('error');
+    }
+
+    if (!loaded && isMountedRef.current) {
+      console.log('[Radio] All streams failed');
+      setRadioState('error');
     }
   }, [radioState]);
 
