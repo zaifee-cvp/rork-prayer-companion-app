@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 import createContextHook from '@nkzw/create-context-hook';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Purchases, { PurchasesOfferings, CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import Colors from '@/constants/colors';
 import cities, { City } from '@/constants/cities';
 import {
@@ -75,6 +77,32 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 const STORAGE_KEY = '@prayer_companion_settings';
 const DHIKR_HISTORY_KEY = '@prayer_companion_dhikr';
+const ENTITLEMENT_ID = 'premium';
+
+function getRCApiKey(): string | undefined {
+  if (__DEV__ || Platform.OS === 'web') {
+    return process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY;
+  }
+  return Platform.select({
+    ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY,
+    android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY,
+    default: process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY,
+  });
+}
+
+let rcConfigured = false;
+const apiKey = getRCApiKey();
+if (apiKey) {
+  try {
+    Purchases.configure({ apiKey });
+    rcConfigured = true;
+    console.log('[RC] RevenueCat configured successfully');
+  } catch (e) {
+    console.log('[RC] Failed to configure RevenueCat:', e);
+  }
+} else {
+  console.log('[RC] No API key available, RevenueCat not configured');
+}
 
 export interface DhikrEntry {
   id: string;
@@ -88,6 +116,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [now, setNow] = useState<Date>(new Date());
   const [dhikrHistory, setDhikrHistory] = useState<DhikrEntry[]>([]);
+  const queryClient = useQueryClient();
 
   const settingsQuery = useQuery({
     queryKey: ['app-settings'],
@@ -107,6 +136,88 @@ export const [AppProvider, useApp] = createContextHook(() => {
       return stored ? (JSON.parse(stored) as DhikrEntry[]) : [];
     },
   });
+
+  const customerInfoQuery = useQuery({
+    queryKey: ['rc-customer-info'],
+    queryFn: async (): Promise<CustomerInfo | null> => {
+      if (!rcConfigured) return null;
+      try {
+        const info = await Purchases.getCustomerInfo();
+        console.log('[RC] Customer info fetched:', JSON.stringify(info.entitlements.active));
+        return info;
+      } catch (e) {
+        console.log('[RC] Error fetching customer info:', e);
+        return null;
+      }
+    },
+    refetchOnWindowFocus: true,
+  });
+
+  const offeringsQuery = useQuery({
+    queryKey: ['rc-offerings'],
+    queryFn: async (): Promise<PurchasesOfferings | null> => {
+      if (!rcConfigured) return null;
+      try {
+        const offerings = await Purchases.getOfferings();
+        console.log('[RC] Offerings fetched:', JSON.stringify(offerings.current?.availablePackages.map(p => p.identifier)));
+        return offerings;
+      } catch (e) {
+        console.log('[RC] Error fetching offerings:', e);
+        return null;
+      }
+    },
+  });
+
+  const purchaseMutation = useMutation({
+    mutationFn: async (pkg: PurchasesPackage) => {
+      console.log('[RC] Purchasing package:', pkg.identifier);
+      const result = await Purchases.purchasePackage(pkg);
+      console.log('[RC] Purchase result:', JSON.stringify(result.customerInfo.entitlements.active));
+      return result;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
+      const isPremium = !!result.customerInfo.entitlements.active[ENTITLEMENT_ID];
+      if (isPremium) {
+        updateSettings({ isPremium: true });
+      }
+    },
+    onError: (error: any) => {
+      if (error?.userCancelled) {
+        console.log('[RC] Purchase cancelled by user');
+      } else {
+        console.log('[RC] Purchase error:', error?.message || error);
+      }
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async () => {
+      console.log('[RC] Restoring purchases...');
+      const info = await Purchases.restorePurchases();
+      console.log('[RC] Restore result:', JSON.stringify(info.entitlements.active));
+      return info;
+    },
+    onSuccess: (info) => {
+      queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
+      const isPremium = !!info.entitlements.active[ENTITLEMENT_ID];
+      updateSettings({ isPremium });
+    },
+  });
+
+  const isPremiumFromRC = useMemo(() => {
+    if (!customerInfoQuery.data) return false;
+    return !!customerInfoQuery.data.entitlements.active[ENTITLEMENT_ID];
+  }, [customerInfoQuery.data]);
+
+  useEffect(() => {
+    if (customerInfoQuery.data) {
+      const rcPremium = !!customerInfoQuery.data.entitlements.active[ENTITLEMENT_ID];
+      if (rcPremium !== settings.isPremium) {
+        updateSettings({ isPremium: rcPremium });
+      }
+    }
+  }, [isPremiumFromRC]);
 
   useEffect(() => {
     if (settingsQuery.data) setSettings(settingsQuery.data);
@@ -255,6 +366,15 @@ export const [AppProvider, useApp] = createContextHook(() => {
     dhikrHistory,
     addDhikrEntry,
     dhikrStreak,
+    offerings: offeringsQuery.data,
+    offeringsLoading: offeringsQuery.isLoading,
+    customerInfo: customerInfoQuery.data,
+    purchasePackage: purchaseMutation.mutateAsync,
+    isPurchasing: purchaseMutation.isPending,
+    purchaseError: purchaseMutation.error,
+    restorePurchases: restoreMutation.mutateAsync,
+    isRestoring: restoreMutation.isPending,
+    rcConfigured,
   };
 });
 

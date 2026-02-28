@@ -14,7 +14,7 @@ interface PremiumGateProps {
   style?: object;
 }
 
-export default function PremiumGate({ children, locked, message = 'Unlock Lifetime', style }: PremiumGateProps) {
+export default function PremiumGate({ children, locked, message = 'Upgrade to Premium', style }: PremiumGateProps) {
   const { settings, isDark } = useApp();
   const router = useRouter();
   const isLocked = locked !== undefined ? locked : !settings.isPremium;
