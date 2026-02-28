@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen, Volume2, Square } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -80,7 +80,6 @@ export default function DhikrScreen() {
   const [sequenceComplete, setSequenceComplete] = useState(false);
 
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const stepTransition = useRef(new Animated.Value(1)).current;
@@ -202,10 +201,7 @@ export default function DhikrScreen() {
 
   useEffect(() => {
     return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
+      Speech.stop();
     };
   }, []);
 
@@ -214,21 +210,12 @@ export default function DhikrScreen() {
     if (!step) return;
 
     if (playingIndex === index) {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync().catch(() => {});
-        await soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
+      Speech.stop();
       setPlayingIndex(null);
       return;
     }
 
-    if (soundRef.current) {
-      await soundRef.current.stopAsync().catch(() => {});
-      await soundRef.current.unloadAsync().catch(() => {});
-      soundRef.current = null;
-    }
-
+    Speech.stop();
     setPlayingIndex(index);
 
     if (Platform.OS !== 'web') {
@@ -244,30 +231,23 @@ export default function DhikrScreen() {
     };
 
     const textToSpeak = arabicTexts[index] ?? step.arabic;
-    const encodedText = encodeURIComponent(textToSpeak);
-    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=ar&client=tw-ob&ttsspeed=0.5`;
+    console.log('Speaking dhikr:', step.transliteration, textToSpeak);
 
-    console.log('Playing dhikr audio:', step.transliteration);
-
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
-        { shouldPlay: true }
-      );
-      soundRef.current = sound;
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          console.log('Audio finished for index:', index);
-          setPlayingIndex(null);
-          sound.unloadAsync().catch(() => {});
-          soundRef.current = null;
-        }
-      });
-    } catch (err) {
-      console.log('Audio playback error:', err);
-      setPlayingIndex(null);
-    }
+    Speech.speak(textToSpeak, {
+      language: 'ar',
+      rate: 0.8,
+      onDone: () => {
+        console.log('Speech finished for index:', index);
+        setPlayingIndex(null);
+      },
+      onError: (err) => {
+        console.log('Speech error:', err);
+        setPlayingIndex(null);
+      },
+      onStopped: () => {
+        setPlayingIndex(null);
+      },
+    });
   }, [playingIndex]);
 
   const ringColor = useMemo(() => {
