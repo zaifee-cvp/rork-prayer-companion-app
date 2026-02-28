@@ -256,7 +256,7 @@ export default function DhikrScreen() {
 
       Speech.speak(textToSpeak, {
         language: lang,
-        rate: useArabic ? 0.8 : 0.9,
+        rate: useArabic ? 0.5 : 0.6,
         pitch: 1.0,
         onStart: () => {
           console.log('Speech started for index:', index);
