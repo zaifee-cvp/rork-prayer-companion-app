@@ -8,36 +8,22 @@ export interface AzanSound {
 
 export const AZAN_SOUNDS: AzanSound[] = [
   {
-    id: 'makkah',
-    name: 'Makkah Azan',
-    reciter: 'Ali Ahmed Mulla',
-    url: 'https://media.sd.ma/assabile/adhan_3435370/20e63600a8d0.mp3',
-    duration: '3:30',
+    id: 'classic',
+    name: 'Classic Adhan',
+    reciter: 'Public Domain',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Beautiful_adhan.ogg',
+    duration: '2:34',
   },
   {
-    id: 'madinah',
-    name: 'Madinah Azan',
-    reciter: 'Essam Bukhari',
-    url: 'https://media.sd.ma/assabile/adhan_3435370/58543fa26b97.mp3',
-    duration: '3:15',
-  },
-  {
-    id: 'alaqsa',
-    name: 'Al-Aqsa Azan',
-    reciter: 'Al-Aqsa Mosque',
-    url: 'https://media.sd.ma/assabile/adhan_3435370/4dda3e52db7e.mp3',
-    duration: '3:20',
-  },
-  {
-    id: 'mishary',
-    name: 'Mishary Rashid',
-    reciter: 'Mishary Rashid Alafasy',
-    url: 'https://server8.mp3quran.net/afs/Adhan.mp3',
-    duration: '4:00',
+    id: 'traditional',
+    name: 'Traditional Adhan',
+    reciter: 'CC BY-SA 4.0',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/86/Azan.ogg',
+    duration: '3:03',
   },
 ];
 
-export const DEFAULT_AZAN_SOUND_ID = 'makkah';
+export const DEFAULT_AZAN_SOUND_ID = 'classic';
 
 export function getAzanSound(id: string): AzanSound {
   return AZAN_SOUNDS.find((s) => s.id === id) || AZAN_SOUNDS[0];
