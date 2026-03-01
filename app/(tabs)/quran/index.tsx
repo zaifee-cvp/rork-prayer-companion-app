@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Search, Lock, Star, Globe, Check, ChevronRight } from 'lucide-react-native';
+import { Search, Lock, Star, Globe, Check, Radio, ChevronRight } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
@@ -230,7 +230,21 @@ export default function QuranScreen() {
         </View>
       </View>
 
-
+      <TouchableOpacity
+        style={[styles.radioButton, { backgroundColor: isDark ? 'rgba(107,158,145,0.08)' : 'rgba(107,158,145,0.05)', borderColor: isDark ? 'rgba(107,158,145,0.15)' : 'rgba(107,158,145,0.1)' }]}
+        onPress={() => router.push('/radio' as any)}
+        activeOpacity={0.7}
+        testID="live-radio-btn"
+      >
+        <View style={[styles.radioIconBg, { backgroundColor: Colors.primary }]}>
+          <Radio size={14} color="#fff" strokeWidth={2} />
+        </View>
+        <View style={styles.radioButtonInfo}>
+          <Text style={[styles.radioButtonTitle, { color: theme.text }]}>Live Quran Radio</Text>
+          <Text style={[styles.radioButtonSub, { color: theme.textTertiary }]} numberOfLines={1}>Tap to listen live</Text>
+        </View>
+        <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
+      </TouchableOpacity>
 
       {activeTab === 'surah' ? (
         <FlatList
@@ -312,7 +326,11 @@ const styles = StyleSheet.create({
   tabInner: { flexDirection: 'row' as const, alignItems: 'center', gap: 5 },
   tabText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.semibold },
   list: { paddingHorizontal: 24, paddingBottom: 40 },
-
+  radioButton: { flexDirection: 'row' as const, alignItems: 'center', marginHorizontal: 24, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, gap: 12 },
+  radioIconBg: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  radioButtonInfo: { flex: 1 },
+  radioButtonTitle: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium },
+  radioButtonSub: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 1 },
   surahRow: { flexDirection: 'row' as const, alignItems: 'center', borderRadius: 12, padding: 14 },
   numberBadge: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   numberText: { fontFamily: fontFamily.system, fontSize: 13, fontWeight: fw.medium },

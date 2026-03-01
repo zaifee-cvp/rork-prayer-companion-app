@@ -20,8 +20,8 @@ import {
   Sunrise,
   Sunset,
   CloudSun,
-  MapPin,
   Radio,
+  MapPin,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -194,17 +194,17 @@ export default function HomeScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.radioCard, { backgroundColor: isDark ? 'rgba(123,175,162,0.08)' : 'rgba(107,158,145,0.06)' }]}
+          style={[styles.radioCard, { backgroundColor: theme.surface }]}
           onPress={() => router.push('/radio' as any)}
           activeOpacity={0.7}
           testID="quick-radio"
         >
-          <View style={[styles.radioIconBg, { backgroundColor: isDark ? 'rgba(123,175,162,0.12)' : 'rgba(107,158,145,0.1)' }]}>
-            <Radio size={20} color={Colors.primary} strokeWidth={1.8} />
+          <View style={[styles.radioIconWrap, { backgroundColor: isDark ? 'rgba(107,158,145,0.15)' : 'rgba(107,158,145,0.1)' }]}>
+            <Radio size={18} color={Colors.primary} strokeWidth={1.8} />
           </View>
-          <View style={styles.radioText}>
+          <View style={styles.radioTextWrap}>
             <Text style={[styles.radioTitle, { color: theme.text }]}>Live Quran Radio</Text>
-            <Text style={[styles.radioSub, { color: theme.textTertiary }]}>Stream live recitation</Text>
+            <Text style={[styles.radioSub, { color: theme.textTertiary }]}>Listen to live recitation</Text>
           </View>
           <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
         </TouchableOpacity>
@@ -468,22 +468,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 14,
     padding: 14,
-    marginBottom: 16,
+    marginBottom: 14,
     gap: 12,
   },
-  radioIconBg: {
+  radioIconWrap: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  radioText: {
+  radioTextWrap: {
     flex: 1,
   },
   radioTitle: {
     fontFamily: fontFamily.system,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: fw.medium,
     letterSpacing: -0.2,
   },

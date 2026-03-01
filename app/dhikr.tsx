@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
-import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen, Volume2, Square } from 'lucide-react-native';
+import { X, RotateCcw, Target, Flame, ChevronRight, Check, BookOpen } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
@@ -78,9 +77,6 @@ export default function DhikrScreen() {
   const [count, setCount] = useState(0);
   const [freeTarget, setFreeTarget] = useState(33);
   const [sequenceComplete, setSequenceComplete] = useState(false);
-
-  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-  const [arabicVoice, setArabicVoice] = useState<string | undefined>(undefined);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const stepTransition = useRef(new Animated.Value(1)).current;
@@ -200,109 +196,6 @@ export default function DhikrScreen() {
     animateStepTransition();
   }, [mode, animateStepTransition]);
 
-  useEffect(() => {
-    const loadVoices = async () => {
-      try {
-        const voices = await Speech.getAvailableVoicesAsync();
-        const arabicVoices = voices.filter(v => v.language.startsWith('ar'));
-        console.log('Available Arabic voices:', arabicVoices.map(v => ({ id: v.identifier, name: v.name, quality: v.quality })));
-
-        const enhanced = arabicVoices.find(v =>
-          v.quality === Speech.VoiceQuality.Enhanced ||
-          v.name.toLowerCase().includes('enhanced') ||
-          v.name.toLowerCase().includes('premium') ||
-          v.name.toLowerCase().includes('compact') === false
-        );
-        const preferred = enhanced ?? arabicVoices[0];
-        if (preferred) {
-          console.log('Selected Arabic voice:', preferred.identifier, preferred.name);
-          setArabicVoice(preferred.identifier);
-        }
-      } catch (e) {
-        console.log('Could not load voices:', e);
-      }
-    };
-    loadVoices();
-
-    return () => {
-      Speech.stop();
-    };
-  }, []);
-
-  const handlePlayVoice = useCallback(async (index: number) => {
-    const step = TASBIH_SEQUENCE[index];
-    if (!step) return;
-
-    try {
-      if (playingIndex === index) {
-        await Speech.stop();
-        setPlayingIndex(null);
-        return;
-      }
-
-      const isSpeaking = await Speech.isSpeakingAsync();
-      if (isSpeaking) {
-        await Speech.stop();
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-
-      setPlayingIndex(index);
-
-      const transliterations: Record<number, string> = {
-        0: 'Subhan Allah',
-        1: 'Alhamdulillah',
-        2: 'Allahu Akbar',
-        3: 'La ilaha illallah',
-        4: 'La ilaha illallahu wahdahu la sharika lahu lahul mulku wa lahul hamdu wa huwa ala kulli shayin qadeer',
-      };
-
-      const arabicTexts: Record<number, string> = {
-        0: 'سبحان الله',
-        1: 'الحمد لله',
-        2: 'الله أكبر',
-        3: 'لا إله إلا الله',
-        4: 'لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير',
-      };
-
-      const useArabic = Platform.OS !== 'web';
-      const textToSpeak = useArabic
-        ? (arabicTexts[index] ?? step.arabic)
-        : (transliterations[index] ?? step.transliteration);
-      const lang = useArabic ? 'ar' : 'en';
-
-      console.log('Speaking dhikr:', step.transliteration, 'lang:', lang, 'text:', textToSpeak);
-
-      Speech.speak(textToSpeak, {
-        language: lang,
-        ...(useArabic && arabicVoice ? { voice: arabicVoice } : {}),
-        rate: useArabic ? (index === 4 ? 0.15 : 0.45) : (index === 4 ? 0.25 : 0.55),
-        pitch: 0.95,
-        onStart: () => {
-          console.log('Speech started for index:', index);
-        },
-        onDone: () => {
-          console.log('Speech finished for index:', index);
-          setPlayingIndex(null);
-        },
-        onError: (err) => {
-          console.log('Speech error:', err);
-          setPlayingIndex(null);
-        },
-        onStopped: () => {
-          console.log('Speech stopped for index:', index);
-          setPlayingIndex(null);
-        },
-      });
-    } catch (err) {
-      console.log('handlePlayVoice error:', err);
-      setPlayingIndex(null);
-    }
-  }, [playingIndex, arabicVoice]);
-
   const ringColor = useMemo(() => {
     if (mode === 'tasbih') {
       if (sequenceComplete) return Colors.gold;
@@ -373,21 +266,7 @@ export default function DhikrScreen() {
             {!sequenceComplete ? (
               <>
                 <Text style={[styles.stepArabic, { color: theme.text }]}>{currentStep.arabic}</Text>
-                <View style={styles.translitRow}>
-                  <Text style={[styles.stepTranslit, { color: ringColor }]}>{currentStep.transliteration}</Text>
-                  <TouchableOpacity
-                    onPress={() => handlePlayVoice(stepIndex)}
-                    hitSlop={12}
-                    style={[styles.voiceBtn, { backgroundColor: playingIndex === stepIndex ? ringColor : theme.surfaceSecondary }]}
-                    testID={`dhikr-voice-${stepIndex}`}
-                  >
-                    {playingIndex === stepIndex ? (
-                      <Square size={10} color="#fff" strokeWidth={2.5} />
-                    ) : (
-                      <Volume2 size={14} color={ringColor} strokeWidth={2} />
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <Text style={[styles.stepTranslit, { color: ringColor }]}>{currentStep.transliteration}</Text>
                 <Text style={[styles.stepMeaning, { color: theme.textSecondary }]}>{currentStep.meaning}</Text>
               </>
             ) : (
@@ -486,25 +365,12 @@ export default function DhikrScreen() {
                       {step.transliteration} × {step.target}
                     </Text>
                   </View>
-                  <View style={styles.stepRowActions}>
-                    <TouchableOpacity
-                      onPress={() => handlePlayVoice(i)}
-                      hitSlop={8}
-                      style={[styles.voiceBtnSmall, { backgroundColor: playingIndex === i ? (isCurrent ? ringColor : Colors.gold) : theme.surfaceSecondary }]}
-                    >
-                      {playingIndex === i ? (
-                        <Square size={8} color="#fff" strokeWidth={2.5} />
-                      ) : (
-                        <Volume2 size={11} color={isCurrent ? ringColor : isDone ? Colors.gold : theme.textTertiary} strokeWidth={2.2} />
-                      )}
-                    </TouchableOpacity>
-                    {isDone && (
-                      <Text style={[styles.doneLabel, { color: Colors.gold }]}>Done</Text>
-                    )}
-                    {isCurrent && (
-                      <Text style={[styles.currentCount, { color: ringColor }]}>{count}/{step.target}</Text>
-                    )}
-                  </View>
+                  {isDone && (
+                    <Text style={[styles.doneLabel, { color: Colors.gold }]}>Done</Text>
+                  )}
+                  {isCurrent && (
+                    <Text style={[styles.currentCount, { color: ringColor }]}>{count}/{step.target}</Text>
+                  )}
                 </View>
               );
             })}
@@ -602,10 +468,6 @@ const styles = StyleSheet.create({
   stepRowLabel: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular },
   doneLabel: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.medium },
   currentCount: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.bold },
-  translitRow: { flexDirection: 'row' as const, alignItems: 'center', gap: 8, marginBottom: 4 },
-  voiceBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center' as const, alignItems: 'center' as const },
-  voiceBtnSmall: { width: 24, height: 24, borderRadius: 12, justifyContent: 'center' as const, alignItems: 'center' as const },
-  stepRowActions: { flexDirection: 'row' as const, alignItems: 'center', gap: 8 },
   targetRow: { flexDirection: 'row' as const, alignItems: 'center', gap: 10, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 14, width: '100%' },
   targetLabel: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium },
   hadithCard: { width: '100%', borderRadius: 14, padding: 20, marginTop: 16, marginBottom: 16 },

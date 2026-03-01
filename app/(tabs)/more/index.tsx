@@ -31,8 +31,9 @@ import {
   BookOpen,
   Languages,
   Type,
-  Timer,
   VolumeX,
+  Timer,
+  Radio,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -308,17 +309,23 @@ export default function MoreScreen() {
           </View>
         </View>
 
-
-
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>RECITER AUDIO</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>QURAN AUDIO</Text>
           <View style={styles.row}>
             <VolumeX size={18} color={theme.textTertiary} strokeWidth={1.8} />
             <View style={styles.rowContent}>
-              <Text style={[styles.rowText, { color: theme.textTertiary }]}>Audio temporarily unavailable</Text>
-              <Text style={[styles.rowValue, { color: theme.textTertiary }]}>Reciter playback is disabled due to copyright permissions</Text>
+              <Text style={[styles.rowText, { color: theme.textTertiary }]}>Reciter Playback</Text>
+              <Text style={[styles.rowValue, { color: theme.textTertiary }]}>Audio temporarily unavailable</Text>
             </View>
           </View>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/radio' as any)}>
+            <Radio size={18} color={Colors.primary} strokeWidth={1.8} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowText, { color: theme.text }]}>Live Quran Radio</Text>
+              <Text style={[styles.rowValue, { color: theme.textTertiary }]}>Listen to live recitation</Text>
+            </View>
+            <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
+          </TouchableOpacity>
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>

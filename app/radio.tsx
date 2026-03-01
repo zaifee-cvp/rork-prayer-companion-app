@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,439 +7,501 @@ import {
   ActivityIndicator,
   Animated,
   Platform,
+  ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
-import * as Haptics from 'expo-haptics';
-import {
-  X,
-  Radio,
-  Play,
-  Pause,
-  AlertCircle,
-  RefreshCw,
-} from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, Stack } from 'expo-router';
+import { ChevronLeft, Radio, Play, Pause, AlertCircle, Volume2 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
+import { RADIO_STATIONS, RadioStation } from '@/constants/radio-stations';
 
-const STREAM_URLS = [
-  'https://backup.qurango.net/radio/tarateel',
-  'https://Qurango.com/radio/tarateel',
-  'https://stream.radiojar.com/0tpy1h0kxtzuv',
-];
-
-type PlayerState = 'idle' | 'loading' | 'playing' | 'paused' | 'error';
+type RadioState = 'idle' | 'loading' | 'playing' | 'error';
 
 export default function RadioScreen() {
   const { theme, isDark } = useApp();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
-
-  const [playerState, setPlayerState] = useState<PlayerState>('idle');
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const router = useRouter();
+  const [radioState, setRadioState] = useState<RadioState>('idle');
+  const [selectedStation, setSelectedStation] = useState<RadioStation>(RADIO_STATIONS[0]);
   const soundRef = useRef<Audio.Sound | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const streamIndexRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    isMountedRef.current = true;
+    Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+
+    if (Platform.OS !== 'web') {
+      Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+      }).catch((e) => console.log('[Radio] Audio mode error:', e));
+    }
 
     return () => {
-      stopAndUnload();
+      isMountedRef.current = false;
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
     };
   }, []);
 
   useEffect(() => {
-    if (playerState === 'playing') {
-      const loop = Animated.loop(
+    if (radioState === 'playing') {
+      const pulse = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.08, duration: 1200, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        ]),
+          Animated.timing(pulseAnim, { toValue: 1.06, duration: 1500, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        ])
       );
-      loop.start();
-      return () => loop.stop();
+      pulse.start();
+      return () => { pulse.stop(); };
     } else {
       pulseAnim.setValue(1);
     }
-  }, [playerState]);
+  }, [radioState, pulseAnim]);
 
-  const stopAndUnload = useCallback(async () => {
-    try {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync().catch(() => {});
-        await soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
-    } catch (e) {
-      console.log('[Radio] Error during cleanup:', e);
+  const stopPlayback = useCallback(async () => {
+    if (soundRef.current) {
+      try {
+        await soundRef.current.stopAsync();
+        await soundRef.current.unloadAsync();
+      } catch (e) { console.log('[Radio] Stop error:', e); }
+      soundRef.current = null;
     }
+    if (isMountedRef.current) setRadioState('idle');
   }, []);
 
-  const tryStream = useCallback(async (urlIndex: number): Promise<boolean> => {
-    if (urlIndex >= STREAM_URLS.length) return false;
+  const startPlayback = useCallback(async (station: RadioStation) => {
+    setRadioState('loading');
 
-    const url = STREAM_URLS[urlIndex];
-    console.log(`[Radio] Trying stream ${urlIndex}: ${url}`);
+    const urls = [station.streamUrl, ...(station.fallbackUrls ?? [])];
+    let loaded = false;
 
-    try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-      });
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      console.log(`[Radio] Trying stream ${i + 1}/${urls.length}:`, url);
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: url },
+          { shouldPlay: true, isLooping: false },
+        );
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: url },
-        { shouldPlay: true, isLooping: false },
-        (status) => {
-          if (status.isLoaded) {
-            if (status.isPlaying) {
-              setPlayerState('playing');
-            } else if (status.isBuffering) {
-              setPlayerState('loading');
+        if (!isMountedRef.current) { await sound.unloadAsync(); return; }
+        soundRef.current = sound;
+
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (!isMountedRef.current) return;
+          if (!status.isLoaded) {
+            if ('error' in status && status.error) {
+              console.log('[Radio] Playback error:', status.error);
+              setRadioState('error');
+              soundRef.current = null;
             }
-          } else if (status.error) {
-            console.log('[Radio] Playback error:', status.error);
           }
-        },
-      );
+        });
 
-      soundRef.current = sound;
-      streamIndexRef.current = urlIndex;
-      return true;
-    } catch (e) {
-      console.log(`[Radio] Stream ${urlIndex} failed:`, e);
-      return tryStream(urlIndex + 1);
+        if (isMountedRef.current) {
+          setRadioState('playing');
+          console.log('[Radio] Stream playing from:', url);
+        }
+        loaded = true;
+        break;
+      } catch (e) {
+        console.log(`[Radio] Stream ${i + 1} failed:`, e);
+        continue;
+      }
+    }
+
+    if (!loaded && isMountedRef.current) {
+      console.log('[Radio] All streams failed');
+      setRadioState('error');
     }
   }, []);
 
   const handlePlay = useCallback(async () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
+    if (radioState === 'loading') return;
 
-    if (playerState === 'playing') {
-      setPlayerState('paused');
-      try {
-        await soundRef.current?.pauseAsync();
-      } catch (e) {
-        console.log('[Radio] Pause error:', e);
-      }
+    if (radioState === 'playing') {
+      console.log('[Radio] Stopping stream');
+      await stopPlayback();
       return;
     }
 
-    if (playerState === 'paused' && soundRef.current) {
-      setPlayerState('loading');
-      try {
-        await soundRef.current.playAsync();
-        setPlayerState('playing');
-      } catch (e) {
-        console.log('[Radio] Resume error:', e);
-        setPlayerState('error');
-        setErrorMessage('Failed to resume stream');
-      }
-      return;
+    await startPlayback(selectedStation);
+  }, [radioState, selectedStation, stopPlayback, startPlayback]);
+
+  const handleStationSelect = useCallback(async (station: RadioStation) => {
+    if (station.id === selectedStation.id && radioState !== 'error') return;
+
+    console.log('[Radio] Switching to:', station.name);
+    setSelectedStation(station);
+
+    if (radioState === 'playing' || radioState === 'loading') {
+      await stopPlayback();
+      setTimeout(() => startPlayback(station), 100);
     }
+  }, [selectedStation, radioState, stopPlayback, startPlayback]);
 
-    setPlayerState('loading');
-    setErrorMessage('');
-    await stopAndUnload();
+  const handleRetry = useCallback(() => {
+    console.log('[Radio] Retrying stream');
+    setRadioState('idle');
+  }, []);
 
-    const success = await tryStream(0);
-    if (!success) {
-      setPlayerState('error');
-      setErrorMessage('Stream unavailable, please try again');
+  const waveAnims = useRef(
+    Array.from({ length: 5 }, () => new Animated.Value(0.3))
+  ).current;
+
+  useEffect(() => {
+    if (radioState === 'playing') {
+      const animations = waveAnims.map((anim, i) =>
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(anim, {
+              toValue: 0.7 + Math.random() * 0.3,
+              duration: 400 + i * 120,
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim, {
+              toValue: 0.2 + Math.random() * 0.2,
+              duration: 500 + i * 100,
+              useNativeDriver: true,
+            }),
+          ])
+        )
+      );
+      animations.forEach((a) => a.start());
+      return () => { animations.forEach((a) => a.stop()); };
+    } else {
+      waveAnims.forEach((anim) => {
+        Animated.timing(anim, { toValue: 0.3, duration: 300, useNativeDriver: true }).start();
+      });
     }
-  }, [playerState, stopAndUnload, tryStream]);
+  }, [radioState, waveAnims]);
 
-  const handleRetry = useCallback(async () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    setPlayerState('loading');
-    setErrorMessage('');
-    await stopAndUnload();
-    const success = await tryStream(0);
-    if (!success) {
-      setPlayerState('error');
-      setErrorMessage('Stream unavailable, please try again');
-    }
-  }, [stopAndUnload, tryStream]);
-
-  const isPlaying = playerState === 'playing';
-  const isLoading = playerState === 'loading';
-  const isError = playerState === 'error';
-
-  const accentColor = isDark ? '#7BAFA2' : '#6B9E91';
-  const glowColor = isDark ? 'rgba(123,175,162,0.15)' : 'rgba(107,158,145,0.1)';
+  const generalStations = RADIO_STATIONS.filter((s) => s.category === 'general');
+  const reciterStations = RADIO_STATIONS.filter((s) => s.category === 'reciter');
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity
-            onPress={() => {
-              stopAndUnload();
-              router.back();
-            }}
-            hitSlop={16}
-            testID="radio-close"
-          >
-            <View style={[styles.closeBg, { backgroundColor: theme.surfaceSecondary }]}>
-              <X size={18} color={theme.textSecondary} strokeWidth={1.8} />
-            </View>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Live Radio</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+      <LinearGradient
+        colors={isDark
+          ? ['rgba(107,158,145,0.06)', 'transparent', 'rgba(107,158,145,0.03)']
+          : ['rgba(107,158,145,0.04)', 'transparent', 'rgba(107,158,145,0.02)']
+        }
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+      <Stack.Screen options={{ headerShown: false }} />
 
-        <View style={styles.playerSection}>
-          <View style={[styles.iconContainer, { backgroundColor: glowColor }]}>
-            <Animated.View style={[styles.iconRing, { transform: [{ scale: pulseAnim }], borderColor: isPlaying ? accentColor : 'transparent' }]}>
-              <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(123,175,162,0.12)' : 'rgba(107,158,145,0.08)' }]}>
-                <Radio size={48} color={accentColor} strokeWidth={1.5} />
-              </View>
-            </Animated.View>
-          </View>
+      <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
+          <ChevronLeft size={22} color={theme.text} strokeWidth={1.8} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Live Radio</Text>
+        <View style={styles.headerRight} />
+      </View>
 
-          <Text style={[styles.title, { color: theme.text }]}>Live Quran Radio</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Continuous Quran recitation
-          </Text>
-
-          <View style={[styles.sourceChip, { backgroundColor: isDark ? 'rgba(196,162,101,0.08)' : 'rgba(196,162,101,0.06)' }]}>
-            <Text style={[styles.sourceText, { color: Colors.gold }]}>
-              Source: Official public Quran radio stream
-            </Text>
-          </View>
-
-          {isPlaying && (
-            <View style={styles.liveIndicator}>
-              <View style={[styles.liveDot, { backgroundColor: '#E74C3C' }]} />
-              <Text style={[styles.liveText, { color: theme.textSecondary }]}>LIVE</Text>
-            </View>
-          )}
-
-          <View style={styles.controlsSection}>
-            {isError ? (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={32} color={Colors.danger} strokeWidth={1.5} />
-                <Text style={[styles.errorText, { color: Colors.danger }]}>{errorMessage}</Text>
-                <TouchableOpacity
-                  style={[styles.retryBtn, { backgroundColor: Colors.primary }]}
-                  onPress={handleRetry}
-                  activeOpacity={0.7}
-                  testID="radio-retry"
-                >
-                  <RefreshCw size={16} color="#fff" strokeWidth={2} />
-                  <Text style={styles.retryText}>Try Again</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={[styles.playerArea, { opacity: fadeAnim }]}>
+          <View style={styles.playerSection}>
+            <Animated.View
+              style={[
+                styles.playerCircle,
+                {
+                  transform: [{ scale: pulseAnim }],
+                  backgroundColor: radioState === 'playing'
+                    ? Colors.primary
+                    : radioState === 'error'
+                    ? Colors.danger
+                    : isDark ? '#2A2A2C' : '#FFFFFF',
+                },
+              ]}
+            >
               <TouchableOpacity
-                style={[
-                  styles.playBtn,
-                  {
-                    backgroundColor: isPlaying ? theme.surfaceSecondary : Colors.primary,
-                    borderColor: isPlaying ? theme.border : Colors.primary,
-                  },
-                ]}
-                onPress={handlePlay}
-                activeOpacity={0.7}
-                disabled={isLoading}
-                testID="radio-play"
+                onPress={radioState === 'error' ? handleRetry : handlePlay}
+                activeOpacity={0.8}
+                disabled={radioState === 'loading'}
+                style={styles.playerTouchable}
               >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color={isPlaying ? theme.text : '#fff'} />
-                ) : isPlaying ? (
-                  <Pause size={28} color={theme.text} strokeWidth={1.8} />
+                {radioState === 'loading' ? (
+                  <ActivityIndicator size="large" color={isDark ? '#fff' : Colors.primary} />
+                ) : radioState === 'error' ? (
+                  <AlertCircle size={44} color="#fff" strokeWidth={1.5} />
+                ) : radioState === 'playing' ? (
+                  <Pause size={44} color="#fff" strokeWidth={2} />
                 ) : (
-                  <Play size={28} color="#fff" strokeWidth={1.8} style={{ marginLeft: 3 }} />
+                  <Play size={48} color={isDark ? Colors.primary : Colors.primaryDark} strokeWidth={2} style={{ marginLeft: 4 }} />
                 )}
               </TouchableOpacity>
+            </Animated.View>
+
+            {radioState === 'playing' && (
+              <View style={styles.waveformRow}>
+                {waveAnims.map((anim, i) => (
+                  <Animated.View
+                    key={`wave-${i}`}
+                    style={[
+                      styles.waveBar,
+                      {
+                        backgroundColor: Colors.primary,
+                        transform: [{ scaleY: anim }],
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
             )}
 
-            <Text style={[styles.stateLabel, { color: theme.textTertiary }]}>
-              {isLoading ? 'Connecting to stream...' : isPlaying ? 'Now Playing' : isError ? '' : 'Tap to play'}
+            {radioState === 'playing' && (
+              <View style={styles.liveIndicator}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.infoSection}>
+            <Radio size={18} color={Colors.primary} strokeWidth={1.8} />
+            <Text style={[styles.stationName, { color: theme.text }]}>
+              {selectedStation.name}
+            </Text>
+            <Text style={[styles.stationNameArabic, { color: theme.textSecondary }]}>
+              {selectedStation.nameArabic}
             </Text>
           </View>
+
+          {radioState === 'error' ? (
+            <View style={styles.errorSection}>
+              <Text style={[styles.errorText, { color: Colors.danger }]}>
+                Stream unavailable, please try again
+              </Text>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: Colors.primary }]} onPress={handleRetry} activeOpacity={0.7}>
+                <Text style={styles.actionBtnText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.actionBtn,
+                {
+                  backgroundColor: radioState === 'playing'
+                    ? isDark ? 'rgba(212,87,78,0.1)' : 'rgba(212,87,78,0.08)'
+                    : Colors.primary,
+                },
+              ]}
+              onPress={handlePlay}
+              activeOpacity={0.7}
+              disabled={radioState === 'loading'}
+            >
+              {radioState === 'loading' ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : radioState === 'playing' ? (
+                <>
+                  <Volume2 size={16} color={Colors.danger} strokeWidth={1.8} />
+                  <Text style={[styles.actionBtnText, { color: Colors.danger }]}>Stop Listening</Text>
+                </>
+              ) : (
+                <>
+                  <Play size={16} color="#fff" strokeWidth={2} />
+                  <Text style={styles.actionBtnText}>Start Listening</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+
+        <View style={styles.stationsSection}>
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>STATIONS</Text>
+
+          {generalStations.map((station) => (
+            <TouchableOpacity
+              key={station.id}
+              style={[
+                styles.stationRow,
+                {
+                  backgroundColor: selectedStation.id === station.id
+                    ? isDark ? 'rgba(107,158,145,0.12)' : 'rgba(107,158,145,0.08)'
+                    : isDark ? theme.surface : theme.surface,
+                  borderColor: selectedStation.id === station.id
+                    ? Colors.primary
+                    : theme.border,
+                },
+              ]}
+              onPress={() => handleStationSelect(station)}
+              activeOpacity={0.7}
+            >
+              <View style={[
+                styles.stationDot,
+                { backgroundColor: selectedStation.id === station.id ? Colors.primary : theme.border },
+              ]} />
+              <View style={styles.stationInfo}>
+                <Text style={[styles.stationRowName, { color: theme.text }]}>{station.name}</Text>
+                <Text style={[styles.stationRowArabic, { color: theme.textSecondary }]}>{station.nameArabic}</Text>
+              </View>
+              {selectedStation.id === station.id && radioState === 'playing' && (
+                <View style={styles.miniWaveRow}>
+                  {[0, 1, 2].map((i) => (
+                    <Animated.View
+                      key={`mini-wave-${i}`}
+                      style={[
+                        styles.miniWaveBar,
+                        {
+                          backgroundColor: Colors.primary,
+                          transform: [{ scaleY: waveAnims[i] ?? waveAnims[0] }],
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+
+          <Text style={[styles.sectionLabel, { color: theme.textSecondary, marginTop: 20 }]}>RECITERS</Text>
+
+          {reciterStations.map((station) => (
+            <TouchableOpacity
+              key={station.id}
+              style={[
+                styles.stationRow,
+                {
+                  backgroundColor: selectedStation.id === station.id
+                    ? isDark ? 'rgba(107,158,145,0.12)' : 'rgba(107,158,145,0.08)'
+                    : isDark ? theme.surface : theme.surface,
+                  borderColor: selectedStation.id === station.id
+                    ? Colors.primary
+                    : theme.border,
+                },
+              ]}
+              onPress={() => handleStationSelect(station)}
+              activeOpacity={0.7}
+            >
+              <View style={[
+                styles.stationDot,
+                { backgroundColor: selectedStation.id === station.id ? Colors.primary : theme.border },
+              ]} />
+              <View style={styles.stationInfo}>
+                <Text style={[styles.stationRowName, { color: theme.text }]}>{station.name}</Text>
+                <Text style={[styles.stationRowArabic, { color: theme.textSecondary }]}>{station.nameArabic}</Text>
+              </View>
+              {selectedStation.id === station.id && radioState === 'playing' && (
+                <View style={styles.miniWaveRow}>
+                  {[0, 1, 2].map((i) => (
+                    <Animated.View
+                      key={`mini-wave-${i}`}
+                      style={[
+                        styles.miniWaveBar,
+                        {
+                          backgroundColor: Colors.primary,
+                          transform: [{ scaleY: waveAnims[i] ?? waveAnims[0] }],
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
         </View>
 
-        <View style={[styles.disclaimerContainer, { paddingBottom: insets.bottom + 16 }]}>
-          <View style={[styles.disclaimerCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }]}>
-            <Text style={[styles.disclaimerText, { color: theme.textTertiary }]}>
-              This is a live public broadcast stream. All rights belong to the original broadcaster. No audio is downloaded, cached, or recorded.
-            </Text>
-          </View>
+        <View style={styles.disclaimer}>
+          <Text style={[styles.disclaimerText, { color: theme.textTertiary }]}>
+            Free public broadcast streams via mp3quran.net. All rights belong to the original reciters and broadcasters.
+          </Text>
         </View>
-      </Animated.View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
+  root: { flex: 1 },
+  header: { flexDirection: 'row' as const, alignItems: 'center', paddingBottom: 12, paddingHorizontal: 16 },
+  backBtn: { width: 40 },
+  headerTitle: { fontFamily: fontFamily.system, flex: 1, textAlign: 'center' as const, fontSize: 16, fontWeight: fw.medium },
+  headerRight: { width: 40 },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20 },
+  playerArea: { alignItems: 'center', paddingTop: 8, paddingBottom: 8 },
+  playerSection: { alignItems: 'center', justifyContent: 'center', marginBottom: 24, width: 180, height: 180 },
+  playerCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 12,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  header: {
+  playerTouchable: { width: 140, height: 140, borderRadius: 70, alignItems: 'center', justifyContent: 'center' },
+  waveformRow: { flexDirection: 'row' as const, alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 16, height: 24 },
+  waveBar: { width: 3, height: 24, borderRadius: 2 },
+  liveIndicator: { flexDirection: 'row' as const, alignItems: 'center', gap: 6, marginTop: 12, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, backgroundColor: 'rgba(212,87,78,0.1)' },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.danger },
+  liveText: { fontFamily: fontFamily.system, fontSize: 10, fontWeight: fw.bold, color: Colors.danger, letterSpacing: 1.2 },
+  infoSection: { alignItems: 'center', gap: 4, marginBottom: 20 },
+  stationName: { fontFamily: fontFamily.system, fontSize: 18, fontWeight: fw.semibold, letterSpacing: -0.3, textAlign: 'center' as const },
+  stationNameArabic: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.regular, textAlign: 'center' as const },
+  errorSection: { alignItems: 'center', gap: 16 },
+  errorText: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.regular, textAlign: 'center' as const },
+  actionBtn: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-  },
-  headerTitle: {
-    fontFamily: fontFamily.system,
-    fontSize: 16,
-    fontWeight: fw.medium,
-  },
-  headerSpacer: {
-    width: 34,
-  },
-  closeBg: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
     justifyContent: 'center',
-    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 36,
+    paddingVertical: 16,
+    borderRadius: 16,
+    minWidth: 220,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
   },
-  playerSection: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  iconContainer: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  iconRing: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontFamily: fontFamily.system,
-    fontSize: 28,
-    fontWeight: fw.bold,
-    letterSpacing: -0.3,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontFamily: fontFamily.system,
-    fontSize: 15,
-    fontWeight: fw.regular,
-    marginBottom: 12,
-  },
-  sourceChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 10,
-    marginBottom: 16,
-  },
-  sourceText: {
-    fontFamily: fontFamily.system,
-    fontSize: 12,
-    fontWeight: fw.medium,
-  },
-  liveIndicator: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  liveText: {
+  actionBtnText: { fontFamily: fontFamily.system, fontSize: 15, fontWeight: fw.medium, color: '#fff' },
+  stationsSection: { marginTop: 28 },
+  sectionLabel: {
     fontFamily: fontFamily.system,
     fontSize: 11,
     fontWeight: fw.semibold,
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    marginLeft: 4,
   },
-  controlsSection: {
-    alignItems: 'center',
-    marginTop: 24,
-    gap: 14,
-  },
-  playBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-  },
-  stateLabel: {
-    fontFamily: fontFamily.system,
-    fontSize: 13,
-    fontWeight: fw.regular,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  errorText: {
-    fontFamily: fontFamily.system,
-    fontSize: 15,
-    fontWeight: fw.medium,
-    textAlign: 'center' as const,
-  },
-  retryBtn: {
+  stationRow: {
     flexDirection: 'row' as const,
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     borderRadius: 12,
+    marginBottom: 6,
+    borderWidth: 1,
   },
-  retryText: {
-    fontFamily: fontFamily.system,
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: fw.medium,
+  stationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 12,
   },
-  disclaimerContainer: {
-    paddingHorizontal: 24,
-  },
-  disclaimerCard: {
-    borderRadius: 12,
-    padding: 14,
-  },
-  disclaimerText: {
-    fontFamily: fontFamily.system,
-    fontSize: 11,
-    fontWeight: fw.regular,
-    lineHeight: 16,
-    textAlign: 'center' as const,
-  },
+  stationInfo: { flex: 1 },
+  stationRowName: { fontFamily: fontFamily.system, fontSize: 14, fontWeight: fw.medium },
+  stationRowArabic: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 2 },
+  miniWaveRow: { flexDirection: 'row' as const, alignItems: 'center', gap: 2, marginLeft: 8 },
+  miniWaveBar: { width: 2, height: 14, borderRadius: 1 },
+  disclaimer: { paddingHorizontal: 12, paddingTop: 24, paddingBottom: 8 },
+  disclaimerText: { fontFamily: fontFamily.system, fontSize: 11, fontWeight: fw.regular, textAlign: 'center' as const, lineHeight: 16 },
 });
