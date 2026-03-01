@@ -18,9 +18,8 @@ export function getReciterById(id: string): Reciter {
   return RECITERS.find((r) => r.id === id) ?? RECITERS[0];
 }
 
-export const RECITER_AUDIO_DISABLED = true;
-export const RECITER_AUDIO_MESSAGE = 'Audio temporarily unavailable';
-
-export function getAudioUrl(_reciterFolder: string, _surah: number, _ayah: number): string {
-  return '';
+export function getAudioUrl(reciterFolder: string, surah: number, ayah: number): string {
+  const s = String(surah).padStart(3, '0');
+  const a = String(ayah).padStart(3, '0');
+  return `https://everyayah.com/data/${reciterFolder}/${s}${a}.mp3`;
 }
