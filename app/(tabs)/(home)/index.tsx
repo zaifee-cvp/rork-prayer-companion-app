@@ -26,10 +26,13 @@ import {
   Square,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
+import { useReview } from '@/providers/ReviewProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
 import CountdownRing from '@/components/CountdownRing';
 import PremiumGate from '@/components/PremiumGate';
+import PreReviewModal from '@/components/PreReviewModal';
+import RamadanBanner from '@/components/RamadanBanner';
 import {
   formatTime,
   getTimeUntil,
@@ -58,9 +61,11 @@ const PRAYER_ACCENT: Record<string, string> = {
 
 export default function HomeScreen() {
   const { theme, isDark, settings, prayerTimes, nextPrayer, hijriDate, now, city, isLoading, azanPlaying, stopAzan: handleStopAzan } = useApp();
+  const { checkAndTriggerReview } = useReview();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const reviewCheckedRef = useRef(false);
 
   useEffect(() => {
     if (!isLoading && !settings.onboardingComplete) {
@@ -75,6 +80,16 @@ export default function HomeScreen() {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  useEffect(() => {
+    if (!isLoading && settings.onboardingComplete && !reviewCheckedRef.current) {
+      reviewCheckedRef.current = true;
+      const timer = setTimeout(() => {
+        checkAndTriggerReview(settings.isPremium);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, settings.onboardingComplete]);
 
   const timeUntil = useMemo(() => {
     if (!nextPrayer) return null;
@@ -113,6 +128,8 @@ export default function HomeScreen() {
             {city.name}, {city.country}
           </Text>
         </View>
+
+        <RamadanBanner />
 
         {azanPlaying && (
           <TouchableOpacity
@@ -287,6 +304,8 @@ export default function HomeScreen() {
 
         <View style={{ height: 24 }} />
       </Animated.ScrollView>
+
+      <PreReviewModal />
     </View>
   );
 }

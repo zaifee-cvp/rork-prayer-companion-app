@@ -6,6 +6,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
 import { AppProvider } from "@/providers/AppProvider";
+import { ReviewProvider } from "@/providers/ReviewProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -103,8 +104,10 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ErrorBoundary>
           <AppProvider>
-            <StatusBar style="auto" />
-            <RootLayoutNav />
+            <ReviewProvider>
+              <StatusBar style="auto" />
+              <RootLayoutNav />
+            </ReviewProvider>
           </AppProvider>
         </ErrorBoundary>
       </GestureHandlerRootView>
