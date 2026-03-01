@@ -185,8 +185,7 @@ export default function RadioScreen() {
     }
   }, [radioState, waveAnims]);
 
-  const generalStations = RADIO_STATIONS.filter((s) => s.category === 'general');
-  const reciterStations = RADIO_STATIONS.filter((s) => s.category === 'reciter');
+
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -325,53 +324,7 @@ export default function RadioScreen() {
         <View style={styles.stationsSection}>
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>STATIONS</Text>
 
-          {generalStations.map((station) => (
-            <TouchableOpacity
-              key={station.id}
-              style={[
-                styles.stationRow,
-                {
-                  backgroundColor: selectedStation.id === station.id
-                    ? isDark ? 'rgba(107,158,145,0.12)' : 'rgba(107,158,145,0.08)'
-                    : isDark ? theme.surface : theme.surface,
-                  borderColor: selectedStation.id === station.id
-                    ? Colors.primary
-                    : theme.border,
-                },
-              ]}
-              onPress={() => handleStationSelect(station)}
-              activeOpacity={0.7}
-            >
-              <View style={[
-                styles.stationDot,
-                { backgroundColor: selectedStation.id === station.id ? Colors.primary : theme.border },
-              ]} />
-              <View style={styles.stationInfo}>
-                <Text style={[styles.stationRowName, { color: theme.text }]}>{station.name}</Text>
-                <Text style={[styles.stationRowArabic, { color: theme.textSecondary }]}>{station.nameArabic}</Text>
-              </View>
-              {selectedStation.id === station.id && radioState === 'playing' && (
-                <View style={styles.miniWaveRow}>
-                  {[0, 1, 2].map((i) => (
-                    <Animated.View
-                      key={`mini-wave-${i}`}
-                      style={[
-                        styles.miniWaveBar,
-                        {
-                          backgroundColor: Colors.primary,
-                          transform: [{ scaleY: waveAnims[i] ?? waveAnims[0] }],
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-
-          <Text style={[styles.sectionLabel, { color: theme.textSecondary, marginTop: 20 }]}>RECITERS</Text>
-
-          {reciterStations.map((station) => (
+          {RADIO_STATIONS.map((station) => (
             <TouchableOpacity
               key={station.id}
               style={[
