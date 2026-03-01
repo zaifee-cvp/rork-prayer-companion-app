@@ -373,21 +373,7 @@ export default function DhikrScreen() {
             {!sequenceComplete ? (
               <>
                 <Text style={[styles.stepArabic, { color: theme.text }]}>{currentStep.arabic}</Text>
-                <View style={styles.translitRow}>
-                  <Text style={[styles.stepTranslit, { color: ringColor }]}>{currentStep.transliteration}</Text>
-                  <TouchableOpacity
-                    onPress={() => handlePlayVoice(stepIndex)}
-                    hitSlop={12}
-                    style={[styles.voiceBtn, { backgroundColor: playingIndex === stepIndex ? ringColor : theme.surfaceSecondary }]}
-                    testID={`dhikr-voice-${stepIndex}`}
-                  >
-                    {playingIndex === stepIndex ? (
-                      <Square size={10} color="#fff" strokeWidth={2.5} />
-                    ) : (
-                      <Volume2 size={14} color={ringColor} strokeWidth={2} />
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <Text style={[styles.stepTranslit, { color: ringColor }]}>{currentStep.transliteration}</Text>
                 <Text style={[styles.stepMeaning, { color: theme.textSecondary }]}>{currentStep.meaning}</Text>
               </>
             ) : (
@@ -487,17 +473,6 @@ export default function DhikrScreen() {
                     </Text>
                   </View>
                   <View style={styles.stepRowActions}>
-                    <TouchableOpacity
-                      onPress={() => handlePlayVoice(i)}
-                      hitSlop={8}
-                      style={[styles.voiceBtnSmall, { backgroundColor: playingIndex === i ? (isCurrent ? ringColor : Colors.gold) : theme.surfaceSecondary }]}
-                    >
-                      {playingIndex === i ? (
-                        <Square size={8} color="#fff" strokeWidth={2.5} />
-                      ) : (
-                        <Volume2 size={11} color={isCurrent ? ringColor : isDone ? Colors.gold : theme.textTertiary} strokeWidth={2.2} />
-                      )}
-                    </TouchableOpacity>
                     {isDone && (
                       <Text style={[styles.doneLabel, { color: Colors.gold }]}>Done</Text>
                     )}
