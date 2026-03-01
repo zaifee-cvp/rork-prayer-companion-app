@@ -15,6 +15,7 @@ import {
   Hand,
   Crown,
   ChevronRight,
+  Radio,
   Moon,
   Sun,
   Sunrise,
@@ -215,6 +216,22 @@ export default function HomeScreen() {
             <ChevronRight size={14} color={theme.textTertiary} strokeWidth={1.5} />
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={[styles.radioCard, { backgroundColor: theme.surface }]}
+          onPress={() => router.push('/radio' as any)}
+          activeOpacity={0.7}
+          testID="quick-radio"
+        >
+          <View style={styles.radioIconWrap}>
+            <Radio size={20} color={Colors.primary} strokeWidth={1.8} />
+          </View>
+          <View style={styles.radioTextWrap}>
+            <Text style={[styles.radioTitle, { color: theme.text }]}>Quran Radio</Text>
+            <Text style={[styles.radioSub, { color: theme.textTertiary }]}>24/7 live recitation · Free</Text>
+          </View>
+          <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
+        </TouchableOpacity>
 
         <PremiumGate locked={!settings.isPremium}>
           <TouchableOpacity
@@ -446,5 +463,35 @@ const styles = StyleSheet.create({
     fontWeight: fw.regular,
     marginTop: 2,
   },
-
+  radioCard: {
+    borderRadius: 14,
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+    marginBottom: 16,
+  },
+  radioIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(107,158,145,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioTextWrap: {
+    flex: 1,
+  },
+  radioTitle: {
+    fontFamily: fontFamily.system,
+    fontSize: 15,
+    fontWeight: fw.medium,
+    letterSpacing: -0.2,
+  },
+  radioSub: {
+    fontFamily: fontFamily.system,
+    fontSize: 12,
+    fontWeight: fw.regular,
+    marginTop: 2,
+  },
 });
