@@ -17,8 +17,8 @@ import {
   Bell,
   ChevronRight,
   Check,
-  Moon,
 } from 'lucide-react-native';
+import { Image } from 'react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
@@ -83,7 +83,11 @@ export default function OnboardingScreen() {
           {step === 0 && (
             <View style={styles.welcomeStep}>
               <View style={[styles.welcomeIcon, { backgroundColor: isDark ? 'rgba(107,158,145,0.12)' : 'rgba(107,158,145,0.1)' }]}>
-                <Moon size={44} color={Colors.primary} strokeWidth={1.5} />
+                <Image
+                  source={require('@/assets/images/icon.png')}
+                  style={{ width: 64, height: 64, borderRadius: 16 }}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={[styles.welcomeTitle, { color: theme.text }]}>Prayer Companion: Quran & Qibla</Text>
               <Text style={[styles.welcomeSubtitle, { color: theme.textSecondary }]}>
