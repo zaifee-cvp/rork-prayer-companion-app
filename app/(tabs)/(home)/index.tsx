@@ -20,7 +20,6 @@ import {
   Sunrise,
   Sunset,
   CloudSun,
-  Radio,
   MapPin,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
@@ -192,22 +191,6 @@ export default function HomeScreen() {
             );
           })}
         </View>
-
-        <TouchableOpacity
-          style={[styles.radioCard, { backgroundColor: theme.surface }]}
-          onPress={() => router.push('/radio' as any)}
-          activeOpacity={0.7}
-          testID="quick-radio"
-        >
-          <View style={[styles.radioIconWrap, { backgroundColor: isDark ? 'rgba(107,158,145,0.15)' : 'rgba(107,158,145,0.1)' }]}>
-            <Radio size={18} color={Colors.primary} strokeWidth={1.8} />
-          </View>
-          <View style={styles.radioTextWrap}>
-            <Text style={[styles.radioTitle, { color: theme.text }]}>Live Quran Radio</Text>
-            <Text style={[styles.radioSub, { color: theme.textTertiary }]}>Listen to live recitation</Text>
-          </View>
-          <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
-        </TouchableOpacity>
 
         <View style={styles.quickActions}>
           <TouchableOpacity
@@ -463,34 +446,5 @@ const styles = StyleSheet.create({
     fontWeight: fw.regular,
     marginTop: 2,
   },
-  radioCard: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 14,
-    gap: 12,
-  },
-  radioIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioTextWrap: {
-    flex: 1,
-  },
-  radioTitle: {
-    fontFamily: fontFamily.system,
-    fontSize: 14,
-    fontWeight: fw.medium,
-    letterSpacing: -0.2,
-  },
-  radioSub: {
-    fontFamily: fontFamily.system,
-    fontSize: 12,
-    fontWeight: fw.regular,
-    marginTop: 2,
-  },
+
 });
