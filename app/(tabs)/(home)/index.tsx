@@ -21,6 +21,7 @@ import {
   Sunset,
   CloudSun,
   MapPin,
+  Radio,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -191,6 +192,22 @@ export default function HomeScreen() {
             );
           })}
         </View>
+
+        <TouchableOpacity
+          style={[styles.radioCard, { backgroundColor: isDark ? 'rgba(123,175,162,0.08)' : 'rgba(107,158,145,0.06)' }]}
+          onPress={() => router.push('/radio' as any)}
+          activeOpacity={0.7}
+          testID="quick-radio"
+        >
+          <View style={[styles.radioIconBg, { backgroundColor: isDark ? 'rgba(123,175,162,0.12)' : 'rgba(107,158,145,0.1)' }]}>
+            <Radio size={20} color={Colors.primary} strokeWidth={1.8} />
+          </View>
+          <View style={styles.radioText}>
+            <Text style={[styles.radioTitle, { color: theme.text }]}>Live Quran Radio</Text>
+            <Text style={[styles.radioSub, { color: theme.textTertiary }]}>Stream live recitation</Text>
+          </View>
+          <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
+        </TouchableOpacity>
 
         <View style={styles.quickActions}>
           <TouchableOpacity
@@ -446,5 +463,34 @@ const styles = StyleSheet.create({
     fontWeight: fw.regular,
     marginTop: 2,
   },
-
+  radioCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    gap: 12,
+  },
+  radioIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioText: {
+    flex: 1,
+  },
+  radioTitle: {
+    fontFamily: fontFamily.system,
+    fontSize: 15,
+    fontWeight: fw.medium,
+    letterSpacing: -0.2,
+  },
+  radioSub: {
+    fontFamily: fontFamily.system,
+    fontSize: 12,
+    fontWeight: fw.regular,
+    marginTop: 2,
+  },
 });
