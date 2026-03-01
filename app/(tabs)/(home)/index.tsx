@@ -22,6 +22,8 @@ import {
   CloudSun,
   Radio,
   MapPin,
+  Volume2,
+  Square,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
@@ -55,7 +57,7 @@ const PRAYER_ACCENT: Record<string, string> = {
 };
 
 export default function HomeScreen() {
-  const { theme, isDark, settings, prayerTimes, nextPrayer, hijriDate, now, city, isLoading } = useApp();
+  const { theme, isDark, settings, prayerTimes, nextPrayer, hijriDate, now, city, isLoading, azanPlaying, stopAzan: handleStopAzan } = useApp();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -111,6 +113,22 @@ export default function HomeScreen() {
             {city.name}, {city.country}
           </Text>
         </View>
+
+        {azanPlaying && (
+          <TouchableOpacity
+            style={[styles.azanBanner, { backgroundColor: isDark ? 'rgba(107,158,145,0.12)' : 'rgba(107,158,145,0.08)' }]}
+            onPress={handleStopAzan}
+            activeOpacity={0.7}
+            testID="azan-banner"
+          >
+            <Volume2 size={18} color={Colors.primary} strokeWidth={1.8} />
+            <View style={styles.azanBannerText}>
+              <Text style={[styles.azanBannerTitle, { color: theme.text }]}>Azan Playing</Text>
+              <Text style={[styles.azanBannerSub, { color: theme.textSecondary }]}>Tap to stop</Text>
+            </View>
+            <Square size={16} color={Colors.danger} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
 
         <View style={styles.heroSection}>
           <Text style={[styles.heroLabel, { color: theme.textSecondary }]}>
@@ -488,6 +506,29 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   radioSub: {
+    fontFamily: fontFamily.system,
+    fontSize: 12,
+    fontWeight: fw.regular,
+    marginTop: 2,
+  },
+  azanBanner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    gap: 12,
+  },
+  azanBannerText: {
+    flex: 1,
+  },
+  azanBannerTitle: {
+    fontFamily: fontFamily.system,
+    fontSize: 14,
+    fontWeight: fw.medium,
+    letterSpacing: -0.2,
+  },
+  azanBannerSub: {
     fontFamily: fontFamily.system,
     fontSize: 12,
     fontWeight: fw.regular,

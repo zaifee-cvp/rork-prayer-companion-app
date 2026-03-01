@@ -32,15 +32,19 @@ import {
   Languages,
   Type,
   VolumeX,
+  Volume2,
   Timer,
   Radio,
+  Play,
+  Square,
 } from 'lucide-react-native';
 import { useApp } from '@/providers/AppProvider';
 import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
 import cities from '@/constants/cities';
 import { CALCULATION_METHODS, PrayerName, PRAYER_DISPLAY_NAMES } from '@/utils/prayer-times';
-type ModalType = 'city' | 'method' | 'timezone' | null;
+import { AZAN_SOUNDS } from '@/constants/azan-sounds';
+type ModalType = 'city' | 'method' | 'timezone' | 'azan-sound' | null;
 
 const TIMEZONES = [
   'Asia/Riyadh', 'Asia/Dubai', 'Asia/Karachi', 'Asia/Kolkata', 'Asia/Dhaka',
@@ -53,7 +57,7 @@ const TIMEZONES = [
 ];
 
 export default function MoreScreen() {
-  const { theme, isDark, settings, updateSettings } = useApp();
+  const { theme, isDark, settings, updateSettings, azanPlaying, stopAzan: handleStopAzan, playAzanPreview } = useApp();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -251,6 +255,58 @@ export default function MoreScreen() {
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>AZAN PLAYBACK</Text>
+          <View style={styles.row}>
+            <Volume2 size={18} color={settings.azanPlaybackEnabled ? Colors.primary : theme.textTertiary} strokeWidth={1.8} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowText, { color: theme.text }]}>Play Azan Sound</Text>
+              <Text style={[styles.rowValue, { color: theme.textTertiary }]}>Plays audio when prayer time arrives</Text>
+            </View>
+            <Switch
+              value={settings.azanPlaybackEnabled}
+              onValueChange={(v) => updateSettings({ azanPlaybackEnabled: v })}
+              trackColor={{ true: Colors.primary }}
+            />
+          </View>
+          {settings.azanPlaybackEnabled && (
+            <>
+              <TouchableOpacity style={styles.row} onPress={() => setActiveModal('azan-sound')}>
+                <BellRing size={18} color={Colors.gold} strokeWidth={1.8} />
+                <View style={styles.rowContent}>
+                  <Text style={[styles.rowText, { color: theme.text }]}>Azan Sound</Text>
+                  <Text style={[styles.rowValue, { color: theme.textTertiary }]}>
+                    {AZAN_SOUNDS.find((s) => s.id === settings.azanSoundId)?.name || 'Makkah Azan'}
+                  </Text>
+                </View>
+                <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => {
+                  if (azanPlaying) {
+                    handleStopAzan();
+                  } else {
+                    playAzanPreview();
+                  }
+                }}
+              >
+                {azanPlaying ? (
+                  <Square size={18} color={Colors.danger} strokeWidth={1.8} />
+                ) : (
+                  <Play size={18} color={Colors.primary} strokeWidth={1.8} />
+                )}
+                <Text style={[styles.rowText, { color: azanPlaying ? Colors.danger : theme.text }]}>
+                  {azanPlaying ? 'Stop Preview' : 'Preview Azan'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+          <Text style={[styles.noteText, { color: theme.textTertiary }]}>
+            Azan plays when the app is open and prayer time arrives for selected prayers.
+          </Text>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionLabel, { color: theme.textTertiary }]}>NOTIFICATION OPTIONS</Text>
           <View style={styles.row}>
             <Timer size={18} color={Colors.primary} strokeWidth={1.8} />
@@ -444,6 +500,58 @@ export default function MoreScreen() {
         </View>
       </Modal>
 
+      <Modal visible={activeModal === 'azan-sound'} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalRoot, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Azan Sound</Text>
+            <TouchableOpacity onPress={() => setActiveModal(null)}>
+              <Text style={[styles.modalDone, { color: Colors.primary }]}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView>
+            {AZAN_SOUNDS.map((sound) => {
+              const selected = sound.id === settings.azanSoundId;
+              return (
+                <TouchableOpacity
+                  key={sound.id}
+                  style={[styles.modalRow, selected && { backgroundColor: isDark ? 'rgba(107,158,145,0.08)' : 'rgba(107,158,145,0.04)' }]}
+                  onPress={() => {
+                    updateSettings({ azanSoundId: sound.id });
+                    setActiveModal(null);
+                  }}
+                >
+                  <View style={styles.modalRowContent}>
+                    <Text style={[styles.modalRowText, { color: theme.text }]}>{sound.name}</Text>
+                    <Text style={[styles.modalRowSub, { color: theme.textTertiary }]}>
+                      {sound.reciter} · {sound.duration}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    hitSlop={12}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      if (azanPlaying) {
+                        handleStopAzan();
+                      } else {
+                        playAzanPreview(sound.id);
+                      }
+                    }}
+                    style={styles.previewBtn}
+                  >
+                    {azanPlaying ? (
+                      <Square size={14} color={Colors.danger} strokeWidth={2} />
+                    ) : (
+                      <Play size={14} color={Colors.primary} strokeWidth={2} />
+                    )}
+                  </TouchableOpacity>
+                  {selected && <Check size={16} color={Colors.primary} strokeWidth={2} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+
       <Modal visible={activeModal === 'timezone'} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalRoot, { backgroundColor: theme.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
@@ -500,4 +608,5 @@ const styles = StyleSheet.create({
   modalRowContent: { flex: 1 },
   modalRowText: { fontFamily: fontFamily.system, flex: 1, fontSize: 15, fontWeight: fw.regular },
   modalRowSub: { fontFamily: fontFamily.system, fontSize: 12, fontWeight: fw.regular, marginTop: 2 },
+  previewBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(107,158,145,0.08)', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
 });

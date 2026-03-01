@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
@@ -16,6 +16,8 @@ import {
 } from '@/utils/prayer-times';
 import { gregorianToHijri, HijriDate } from '@/utils/hijri';
 import { schedulePrayerNotifications, cancelAllPrayerNotifications } from '@/utils/notifications';
+import { playAzan, stopAzan, isAzanPlaying } from '@/utils/azan-player';
+import { DEFAULT_AZAN_SOUND_ID } from '@/constants/azan-sounds';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type Madhab = 'hanafi' | 'shafi';
@@ -46,6 +48,8 @@ export interface AppSettings {
   arabicFontSize: number;
   selectedReciterId: string;
   autoPlayNextAyah: boolean;
+  azanSoundId: string;
+  azanPlaybackEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -73,6 +77,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   arabicFontSize: 26,
   selectedReciterId: 'alafasy',
   autoPlayNextAyah: false,
+  azanSoundId: DEFAULT_AZAN_SOUND_ID,
+  azanPlaybackEnabled: false,
 };
 
 const STORAGE_KEY = '@prayer_companion_settings';
@@ -116,6 +122,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [now, setNow] = useState<Date>(new Date());
   const [dhikrHistory, setDhikrHistory] = useState<DhikrEntry[]>([]);
+  const [azanPlaying, setAzanPlaying] = useState<boolean>(false);
+  const azanTriggeredRef = useRef<Record<string, boolean>>({});
   const queryClient = useQueryClient();
 
   const settingsQuery = useQuery({
@@ -334,6 +342,63 @@ export const [AppProvider, useApp] = createContextHook(() => {
     settings.azanAtPrayerTime,
   ]);
 
+  useEffect(() => {
+    if (!settings.azanPlaybackEnabled || settings.enabledNotificationPrayers.length === 0) return;
+
+    const todayKey = now.toDateString();
+    const prayersToCheck: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+    for (const prayerName of prayersToCheck) {
+      if (!settings.enabledNotificationPrayers.includes(prayerName)) continue;
+
+      const prayerTime = prayerTimes[prayerName];
+      if (!prayerTime) continue;
+
+      const triggerKey = `${todayKey}-${prayerName}`;
+      if (azanTriggeredRef.current[triggerKey]) continue;
+
+      const diffMs = now.getTime() - prayerTime.getTime();
+      if (diffMs >= 0 && diffMs < 5000) {
+        console.log(`[Azan] Prayer time reached for ${prayerName}, playing azan`);
+        azanTriggeredRef.current[triggerKey] = true;
+        setAzanPlaying(true);
+        playAzan(settings.azanSoundId)
+          .catch((e) => console.log('[Azan] Failed to play:', e))
+          .finally(() => {
+            setTimeout(() => setAzanPlaying(false), 240000);
+          });
+        break;
+      }
+    }
+  }, [now, prayerTimes, settings.azanPlaybackEnabled, settings.enabledNotificationPrayers, settings.azanSoundId]);
+
+  useEffect(() => {
+    const today = now.toDateString();
+    const keys = Object.keys(azanTriggeredRef.current);
+    for (const key of keys) {
+      if (!key.startsWith(today)) {
+        delete azanTriggeredRef.current[key];
+      }
+    }
+  }, [now.getDate()]);
+
+  const handleStopAzan = useCallback(async () => {
+    await stopAzan();
+    setAzanPlaying(false);
+  }, []);
+
+  const handlePlayAzanPreview = useCallback(async (soundId?: string) => {
+    setAzanPlaying(true);
+    try {
+      await playAzan(soundId || settings.azanSoundId);
+    } catch (e) {
+      console.log('[Azan] Preview failed:', e);
+    }
+    setTimeout(() => {
+      if (!isAzanPlaying()) setAzanPlaying(false);
+    }, 5000);
+  }, [settings.azanSoundId]);
+
   const dhikrStreak = useMemo(() => {
     if (dhikrHistory.length === 0) return 0;
     let streak = 0;
@@ -375,6 +440,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
     restorePurchases: restoreMutation.mutateAsync,
     isRestoring: restoreMutation.isPending,
     rcConfigured,
+    azanPlaying,
+    stopAzan: handleStopAzan,
+    playAzanPreview: handlePlayAzanPreview,
   };
 });
 
