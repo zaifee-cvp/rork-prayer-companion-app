@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, AppState, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
 import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Purchases, { PurchasesOfferings, CustomerInfo, PurchasesPackage } from 'react-native-purchases';
@@ -160,6 +159,16 @@ export const [AppProvider, useApp] = createContextHook(() => {
     },
     refetchOnWindowFocus: true,
   });
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && rcConfigured) {
+        console.log('[RC] App returned to foreground, refreshing entitlements');
+        queryClient.invalidateQueries({ queryKey: ['rc-customer-info'] });
+      }
+    });
+    return () => subscription.remove();
+  }, [queryClient]);
 
   const offeringsQuery = useQuery({
     queryKey: ['rc-offerings'],
