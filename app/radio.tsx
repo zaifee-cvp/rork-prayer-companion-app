@@ -18,10 +18,11 @@ import Colors from '@/constants/colors';
 import { fontFamily, fontWeight as fw } from '@/constants/typography';
 
 const RADIO_STREAMS = [
-  'https://Qurango.com/radio/tarateel',
-  'https://stream.radiojar.com/0tpy1h0kxtzuv',
+  'https://qurango.com/radio/tarateel',
   'https://backup.qurango.com/radio/tarateel',
-  'http://live.mp3quran.net:8006/;',
+  'https://stream.radiojar.com/0tpy1h0kxtzuv',
+  'https://Qurango.com/radio/alafpiglxobuv',
+  'https://server8.mp3quran.net/afs/009.mp3',
 ];
 
 type RadioState = 'idle' | 'loading' | 'playing' | 'error';
@@ -91,25 +92,43 @@ export default function RadioScreen() {
 
     let loaded = false;
     for (let i = 0; i < RADIO_STREAMS.length; i++) {
+      if (!isMountedRef.current) return;
       const url = RADIO_STREAMS[i];
       console.log(`[Radio] Trying stream ${i + 1}/${RADIO_STREAMS.length}:`, url);
       try {
+        if (soundRef.current) {
+          try { await soundRef.current.unloadAsync(); } catch (_e) {}
+          soundRef.current = null;
+        }
+
         const { sound } = await Audio.Sound.createAsync(
           { uri: url },
-          { shouldPlay: true, isLooping: false },
+          { shouldPlay: true, isLooping: false, progressUpdateIntervalMillis: 1000 },
         );
 
         if (!isMountedRef.current) { await sound.unloadAsync(); return; }
+
+        const status = await sound.getStatusAsync();
+        if (!status.isLoaded) {
+          console.log(`[Radio] Stream ${i + 1} not loaded after create`);
+          await sound.unloadAsync();
+          continue;
+        }
+
         soundRef.current = sound;
 
-        sound.setOnPlaybackStatusUpdate((status) => {
+        sound.setOnPlaybackStatusUpdate((s) => {
           if (!isMountedRef.current) return;
-          if (!status.isLoaded) {
-            if ('error' in status && status.error) {
-              console.log('[Radio] Playback error:', status.error);
+          if (!s.isLoaded) {
+            if ('error' in s && s.error) {
+              console.log('[Radio] Playback error:', s.error);
               setRadioState('error');
               soundRef.current = null;
             }
+          } else if (s.isLoaded && s.didJustFinish) {
+            console.log('[Radio] Stream ended, attempting reconnect');
+            setRadioState('idle');
+            soundRef.current = null;
           }
         });
 
@@ -119,8 +138,8 @@ export default function RadioScreen() {
         }
         loaded = true;
         break;
-      } catch (e) {
-        console.log(`[Radio] Stream ${i + 1} failed:`, e);
+      } catch (e: any) {
+        console.log(`[Radio] Stream ${i + 1} failed:`, e?.message || e);
         continue;
       }
     }
