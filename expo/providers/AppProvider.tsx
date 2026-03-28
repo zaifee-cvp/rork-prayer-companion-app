@@ -331,14 +331,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
       return;
     }
 
-    schedulePrayerNotifications({
+    try { schedulePrayerNotifications({
       prayerTimes,
       enabledPrayers,
       reminderEnabled: settings.reminderBeforePrayer,
       reminderMinutes: settings.reminderMinutesBefore,
       azanEnabled: settings.azanAtPrayerTime,
       now,
-    });
+    }); } catch (e) { console.log('[Notifications] Expo Go limitation:', e); }
   }, [
     prayerTimes.fajr?.getTime(),
     prayerTimes.dhuhr?.getTime(),
