@@ -64,7 +64,7 @@ export default function PaywallScreen() {
     (p) => p.identifier === '$rc_monthly' || p.productIdentifier?.includes('monthly')
   );
   const yearlyPrice = yearlyPackage?.product?.priceString ?? '$9.99';
-  const monthlyPrice = monthlyPackage?.product?.priceString ?? '$2.99';
+  const monthlyPrice = monthlyPackage?.product?.priceString ?? '$0.99';
 
   const handlePurchase = async () => {
     const pkg = selectedPlan === 'yearly' ? yearlyPackage : monthlyPackage;
@@ -256,7 +256,7 @@ export default function PaywallScreen() {
         <Text style={[styles.legalText, { color: theme.textTertiary }]}>
           {selectedPlan === 'yearly'
             ? 'After the 7-day free trial, your subscription will auto-renew at the yearly rate unless cancelled at least 24 hours before the end of the current period.'
-            : 'Subscription auto-renews monthly unless cancelled at least 24 hours before the end of the current period.'}
+            : 'Subscription auto-renews at $0.99/month unless cancelled at least 24 hours before the end of the current period.'}
           {'\n\n'}Cancel anytime via App Store or Google Play settings.
         </Text>
 
