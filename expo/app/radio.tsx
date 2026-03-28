@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+﻿import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -268,7 +268,7 @@ export default function RadioScreen() {
         <View style={styles.infoSection}>
           <Radio size={18} color={Colors.primary} strokeWidth={1.8} />
           <Text style={[styles.stationName, { color: theme.text }]}>
-            Quran Radio — Tarateel
+            Quran Radio â€” Tarateel
           </Text>
           <Text style={[styles.stationDesc, { color: theme.textSecondary }]}>
             Live recitation from official public broadcast
@@ -372,3 +372,4 @@ const styles = StyleSheet.create({
   disclaimer: { paddingHorizontal: 32 },
   disclaimerText: { fontFamily: fontFamily.system, fontSize: 11, fontWeight: fw.regular, textAlign: 'center' as const, lineHeight: 16 },
 });
+
