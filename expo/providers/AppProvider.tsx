@@ -122,6 +122,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [now, setNow] = useState<Date>(new Date());
   const [dhikrHistory, setDhikrHistory] = useState<DhikrEntry[]>([]);
   const [azanPlaying, setAzanPlaying] = useState<boolean>(false);
+  const [initialized, setInitialized] = useState<boolean>(false);
   const azanTriggeredRef = useRef<Record<string, boolean>>({});
   const queryClient = useQueryClient();
 
@@ -237,7 +238,10 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [isPremiumFromRC, settings.isPremium]);
 
   useEffect(() => {
-    if (settingsQuery.data) setSettings(settingsQuery.data);
+    if (settingsQuery.data) {
+      setSettings(settingsQuery.data);
+      setInitialized(true);
+    }
   }, [settingsQuery.data]);
 
   useEffect(() => {
@@ -436,7 +440,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     isDark,
     theme,
     timezoneOffset,
-    isLoading: settingsQuery.isLoading,
+    isLoading: !initialized,
     dhikrHistory,
     addDhikrEntry,
     dhikrStreak,

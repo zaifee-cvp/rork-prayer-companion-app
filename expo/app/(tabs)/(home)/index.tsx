@@ -71,7 +71,7 @@ export default function HomeScreen() {
     if (!isLoading && !settings.onboardingComplete) {
       router.replace('/onboarding' as any);
     }
-  }, [isLoading, settings.onboardingComplete]);
+  }, [isLoading, settings.onboardingComplete, router]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
