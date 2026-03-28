@@ -57,8 +57,12 @@ export default function PaywallScreen() {
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
   }, []);
 
-  const yearlyPackage = offerings?.current?.availablePackages.find((p) => p.identifier === '$rc_annual');
-  const monthlyPackage = offerings?.current?.availablePackages.find((p) => p.identifier === '$rc_monthly');
+  const yearlyPackage = offerings?.current?.availablePackages.find(
+    (p) => p.identifier === '$rc_annual' || p.productIdentifier?.includes('yearly')
+  );
+  const monthlyPackage = offerings?.current?.availablePackages.find(
+    (p) => p.identifier === '$rc_monthly' || p.productIdentifier?.includes('monthly')
+  );
   const yearlyPrice = yearlyPackage?.product?.priceString ?? '$9.99';
   const monthlyPrice = monthlyPackage?.product?.priceString ?? '$2.99';
 
