@@ -57,7 +57,7 @@ const TIMEZONES = [
 ];
 
 export default function MoreScreen() {
-  const { theme, isDark, settings, updateSettings, azanPlaying, stopAzan: handleStopAzan, playAzanPreview } = useApp();
+  const { theme, isDark, settings, updateSettings, azanPlaying, stopAzan: handleStopAzan, playAzanPreview, restorePurchases, isRestoring } = useApp();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -72,8 +72,19 @@ export default function MoreScreen() {
   const currentCity = cities[settings.selectedCityIndex] || cities[0];
   const currentMethod = CALCULATION_METHODS[settings.calculationMethod];
 
-  const handleRestore = () => {
-    Alert.alert('Restore Purchase', 'No previous purchase found. This is a simulated environment.', [{ text: 'OK' }]);
+  const handleRestore = async () => {
+    try {
+      const info = await restorePurchases();
+      const hasPremium = !!info?.entitlements?.active?.['premium'];
+      if (hasPremium) {
+        Alert.alert('Restored!', 'Your premium access has been restored.', [{ text: 'Continue' }]);
+      } else {
+        Alert.alert('No Purchase Found', 'We could not find a previous premium purchase linked to your account.');
+      }
+    } catch (error: any) {
+      if (error?.userCancelled) return;
+      Alert.alert('Restore Failed', error?.message || 'Something went wrong. Please try again.');
+    }
   };
 
   const prayerNames: PrayerName[] = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -101,7 +112,7 @@ export default function MoreScreen() {
               <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.row} onPress={handleRestore}>
+          <TouchableOpacity style={styles.row} onPress={handleRestore} disabled={isRestoring}>
             <RefreshCw size={18} color={Colors.primary} strokeWidth={1.8} />
             <Text style={[styles.rowText, { color: theme.text }]}>Restore Purchase</Text>
             <ChevronRight size={16} color={theme.textTertiary} strokeWidth={1.5} />

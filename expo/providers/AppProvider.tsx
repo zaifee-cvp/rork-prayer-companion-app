@@ -234,7 +234,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
         updateSettings({ isPremium: rcPremium });
       }
     }
-  }, [isPremiumFromRC]);
+  }, [isPremiumFromRC, settings.isPremium]);
 
   useEffect(() => {
     if (settingsQuery.data) setSettings(settingsQuery.data);
@@ -264,7 +264,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       saveMutation.mutate(updated);
       return updated;
     });
-  }, []);
+  }, [saveMutation]);
 
   const addDhikrEntry = useCallback((entry: DhikrEntry) => {
     setDhikrHistory((prev) => {

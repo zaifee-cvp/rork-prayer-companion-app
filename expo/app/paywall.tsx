@@ -204,10 +204,10 @@ export default function PaywallScreen() {
           style={[styles.purchaseBtn, { backgroundColor: selectedPlan === 'yearly' ? Colors.gold : Colors.primary }, isWorking && styles.purchaseBtnDisabled]}
           onPress={handlePurchase}
           activeOpacity={0.85}
-          disabled={isWorking}
+          disabled={isWorking || offeringsLoading}
           testID="paywall-purchase"
         >
-          {isWorking ? (
+          {isWorking || offeringsLoading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <Text style={styles.purchaseText}>

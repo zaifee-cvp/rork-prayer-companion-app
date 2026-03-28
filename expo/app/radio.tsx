@@ -45,6 +45,8 @@ export default function RadioScreen() {
       Audio.setAudioModeAsync({
         playsInSilentModeIOS: true,
         staysActiveInBackground: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
       }).catch((e) => console.log('[Radio] Audio mode error:', e));
     }
 
@@ -331,7 +333,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontFamily: fontFamily.system, flex: 1, textAlign: 'center' as const, fontSize: 16, fontWeight: fw.medium },
   headerRight: { width: 40 },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-  playerSection: { alignItems: 'center', justifyContent: 'center', marginBottom: 40, width: 200, height: 200 },
+  playerSection: { alignItems: 'center', justifyContent: 'center', marginBottom: 40, width: '100%', paddingVertical: 16 },
   playerCircle: {
     width: 160,
     height: 160,
